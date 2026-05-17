@@ -48,6 +48,10 @@
                         ♻️ 2回目以降の便利な使い方：<br>
                         すでに作成済みの「マスターCSV」がある場合は、右側の「2」に読み込ませることで、過去の入力内容が一瞬で自動補完されます！
                     </p>
+                    <p class="text-xs text-orange-600 font-bold bg-orange-50 p-2 rounded">
+                        📝 検索結果に他の人の作品がたくさん出てしまう場合：<br>
+                        一般的な英単語だと、他の方の作品に埋もれて探しにくいことがあります。その場合は、LINE Creators Marketの「マイページ（アイテム管理）」からご自身の作品ページを開いてコピペするのを推奨します！
+                    </p>
                     <p class="text-xs text-red-500 font-bold bg-red-50 p-2 rounded">
                         ⚠️ 検索ボタンが消えてしまった場合：<br>
                         マスターCSVだけを読み込むと「英語タイトル」が空になり検索できません。その場合は、左側の「1」にもう一度「売上CSV」をドラッグすると検索ボタンが復活します！
@@ -130,6 +134,7 @@
 
     <script>
         let extractedItems = [];
+        let targetSalesMonth = '';
 
         const dropzoneSales = document.getElementById('dropzoneSales');
         const fileInputSales = document.getElementById('fileInputSales');
@@ -144,6 +149,10 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             const savedData = localStorage.getItem('lineMasterApp_Data');
+            const savedMonth = localStorage.getItem('lineMasterApp_Month');
+            if (savedMonth) {
+                targetSalesMonth = savedMonth;
+            }
             if (savedData) {
                 try {
                     extractedItems = JSON.parse(savedData);
@@ -185,8 +194,15 @@
         });
 
         function handleFile(e) {
-            const files = e.target.files;
+            const files = e.target.files || (e.dataTransfer && e.dataTransfer.files);
             if (!files || files.length === 0) return;
+
+            let filesProcessed = 0;
+            const totalFiles = files.length;
+
+            let batchNewAdded = 0;
+            let batchRestored = 0;
+            let hasMaster = false;
 
             Array.from(files).forEach(file => {
                 Papa.parse(file, {
@@ -194,33 +210,37 @@
                     skipEmptyLines: true,
                     complete: function(results) { 
                         const data = results.data;
-                        if (data.length === 0) return;
-                        
-                        const cleanData = data.map(row => {
-                            const cleanRow = {};
-                            for (let key in row) {
-                                const cleanKey = key.replace(/^[\uFEFF\u200B]+/, '').trim();
-                                cleanRow[cleanKey] = row[key];
-                            }
-                            return cleanRow;
-                        });
+                        if (data.length > 0) {
+                            const cleanData = data.map(row => {
+                                const cleanRow = {};
+                                for (let key in row) {
+                                    const cleanKey = key.replace(/^[\uFEFF\u200B]+/, '').trim();
+                                    cleanRow[cleanKey] = row[key];
+                                }
+                                return cleanRow;
+                            });
 
-                        const firstRow = cleanData[0];
-                        // 判定ロジック：どんなにヘッダーが文字化けしていても、4列構成ならマスターとみなす強行突破策を含む
-                        const isMasterCSV = firstRow.hasOwnProperty('日本語作品タイトル') || 
-                                            firstRow.hasOwnProperty('販売URL') || 
-                                            firstRow.hasOwnProperty('URL') ||
-                                            Object.keys(firstRow).length === 4; // マスターCSVは必ず4列
-                        
-                        processData(cleanData, isMasterCSV); 
+                            const keys = Object.keys(cleanData[0]);
+                            const isMasterCSV = keys.some(k => k.includes('日本語') || k.includes('販売') || k.toLowerCase() === 'url');
+                            if (isMasterCSV) hasMaster = true;
+                            
+                            const counts = processDataSilent(cleanData, isMasterCSV); 
+                            batchNewAdded += counts.newAdded;
+                            batchRestored += counts.restored;
+                        }
+
+                        filesProcessed++;
+                        if (filesProcessed === totalFiles) {
+                            finalizeBatch(batchNewAdded, batchRestored, hasMaster);
+                        }
                     }
                 });
             });
             
-            e.target.value = ''; 
+            if(e.target.value) e.target.value = ''; 
         }
 
-        function processData(data, isMasterCSV) {
+        function processDataSilent(data, isMasterCSV) {
             const itemMap = new Map();
             extractedItems.forEach(item => {
                 itemMap.set(item.id, item);
@@ -229,42 +249,38 @@
             let newAddedCount = 0;
             let restoredCount = 0;
 
+            if (!isMasterCSV && data.length > 0) {
+                const keys = Object.keys(data[0]);
+                const dateKey = keys.find(k => k.includes('From') || k.includes('To'));
+                if (dateKey && data[0][dateKey]) {
+                    const match = String(data[0][dateKey]).match(/^(\d{4})[./-](\d{2})/);
+                    if (match) {
+                        targetSalesMonth = match[1] + match[2]; 
+                        localStorage.setItem('lineMasterApp_Month', targetSalesMonth);
+                    }
+                }
+            }
+
             data.forEach(row => {
                 const keys = Object.keys(row);
-                // ヘッダー名が文字化け（Shift-JIS等）していてもインデックスで無理やり引っこ抜く最強の復元処理
-                const id = row['Item ID'] || row['id'] || row['ID'] || row[keys[0]]; 
+                
+                const idKey = keys.find(k => k.toLowerCase() === 'item id' || k.toLowerCase() === 'id');
+                const typeKey = keys.find(k => k.toLowerCase() === 'type' || k.includes('カテゴリ'));
+                const engTitleKey = keys.find(k => k.toLowerCase() === 'item title' || k.includes('英語'));
+                const jpTitleKey = keys.find(k => k.includes('日本語'));
+                const urlKey = keys.find(k => k.toLowerCase() === 'url' || k.includes('販売'));
+
+                const id = idKey ? row[idKey] : null;
                 if (!id) return;
                 const cleanId = String(id).trim();
                 
-                let type = row['Type'] || row['カテゴリ'] || '不明';
-                let engTitle = row['Item Title'] || row['英語タイトルで検索'] || ''; 
-                
-                let jpTitle = row['日本語作品タイトル'] || row['日本語タイトル'] || ''; 
-                let url = row['販売URL'] || row['URL'] || row['url'] || ''; 
+                if (isMasterCSV) {
+                    const jpTitle = jpTitleKey ? (row[jpTitleKey] || '').trim() : '';
+                    const url = urlKey ? (row[urlKey] || '').trim() : '';
+                    const type = typeKey ? (row[typeKey] || '不明').trim() : '不明';
 
-                // もしヘッダーが見つからなかった場合（文字化け時）は、強制的に2列目と4列目のデータを奪い取る
-                if (isMasterCSV && keys.length >= 4) {
-                    if (!jpTitle) jpTitle = row[keys[1]] || '';
-                    if (!url) url = row[keys[3]] || '';
-                    if (type === '不明') type = row[keys[2]] || '不明';
-                }
-
-                jpTitle = jpTitle.trim();
-                url = url.trim();
-
-                if (!itemMap.has(cleanId)) {
-                    itemMap.set(cleanId, {
-                        id: cleanId,
-                        type: type,
-                        engTitle: engTitle, 
-                        jpTitle: jpTitle, 
-                        url: url 
-                    });
-                    newAddedCount++;
-                } else {
-                    const existing = itemMap.get(cleanId);
-                    
-                    if (isMasterCSV) {
+                    if (itemMap.has(cleanId)) {
+                        const existing = itemMap.get(cleanId);
                         let updated = false;
                         if (jpTitle && existing.jpTitle !== jpTitle) {
                             existing.jpTitle = jpTitle;
@@ -276,29 +292,60 @@
                         }
                         if (updated) restoredCount++;
                     } else {
+                        itemMap.set(cleanId, {
+                            id: cleanId,
+                            type: type,
+                            engTitle: '', 
+                            jpTitle: jpTitle, 
+                            url: url 
+                        });
+                        newAddedCount++;
+                    }
+                } else {
+                    const type = typeKey ? (row[typeKey] || '不明').trim() : '不明';
+                    const engTitle = engTitleKey ? (row[engTitleKey] || '').trim() : '';
+
+                    if (!itemMap.has(cleanId)) {
+                        itemMap.set(cleanId, {
+                            id: cleanId,
+                            type: type,
+                            engTitle: engTitle,
+                            jpTitle: '',
+                            url: ''
+                        });
+                        newAddedCount++;
+                    } else {
+                        const existing = itemMap.get(cleanId);
                         if (!existing.engTitle && engTitle) {
                             existing.engTitle = engTitle;
+                        }
+                        if (existing.type === '不明' && type !== '不明') {
+                            existing.type = type;
                         }
                     }
                 }
             });
 
             extractedItems = Array.from(itemMap.values());
+            return { newAdded: newAddedCount, restored: restoredCount };
+        }
+
+        function finalizeBatch(batchNewAdded, batchRestored, hasMaster) {
             extractedItems.sort((a, b) => parseInt(b.id) - parseInt(a.id));
             saveToLocalStorage();
             
-            if (newAddedCount > 0 && !showOnlyEmptyCheckbox.checked) {
+            if (batchNewAdded > 0 && !showOnlyEmptyCheckbox.checked) {
                 showOnlyEmptyCheckbox.checked = true;
             }
             
             renderTable();
 
             setTimeout(() => {
-                if (isMasterCSV) {
-                    alert(`✅ マスターCSVを読み込みました！\nデータが完全復元・補完されました。\n（新規追加: ${newAddedCount}件, 復元・更新: ${restoredCount}件）`);
+                if (hasMaster) {
+                    alert(`✅ マスターCSVを読み込みました！\nデータが完全復元・補完されました。\n（新規追加: ${batchNewAdded}件, 復元・更新: ${batchRestored}件）`);
                 } else {
-                    if (newAddedCount > 0) {
-                        alert(`売上CSVから 新作 ${newAddedCount} 件 を抽出しました！`);
+                    if (batchNewAdded > 0) {
+                        alert(`売上CSVから 新作 ${batchNewAdded} 件 を抽出しました！`);
                     } else {
                         alert(`新しい作品は見つかりませんでした。\n既存のデータは最新の状態です。`);
                     }
@@ -351,11 +398,9 @@
                 const inputBgClassJp = isJpEmpty ? 'bg-yellow-50 focus:bg-white border-yellow-300' : 'bg-white border-gray-300';
                 const inputBgClassUrl = isUrlEmpty ? 'bg-yellow-50 focus:bg-white border-yellow-300' : 'bg-white border-gray-300';
 
-                // エラー回避：検索キーワードから記号や無駄なスペースを取り除き、クリーンな状態で検索させる
                 const cleanSearchTerm = item.engTitle.replace(/[！!？?"'']/g, '').trim();
                 const searchUrl = `https://store.line.me/search/ja?q=${encodeURIComponent(cleanSearchTerm)}`;
 
-                // 英語名が空っぽの場合は、エラーになる検索ボタンを出さずに案内を表示
                 const searchHtml = item.engTitle 
                     ? `<a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 px-3 py-1.5 rounded text-xs font-bold transition shadow-sm active:scale-95 no-underline">
                         🔍 ストア検索
@@ -405,8 +450,10 @@
         }
 
         document.getElementById('resetBtn').addEventListener('click', () => {
-            if (confirm("入力したデータがすべて消去されます！\n※事前にマスターCSVをダウンロードしておくことをおすすめします。\n\n本当によろしいですか？")) {
+            if (confirm("入力したデータがすべて消去されます！本当によろしいですか？")) {
                 localStorage.removeItem('lineMasterApp_Data');
+                localStorage.removeItem('lineMasterApp_Month');
+                targetSalesMonth = '';
                 extractedItems = [];
                 fileInputSales.value = '';
                 fileInputMaster.value = '';
@@ -427,16 +474,17 @@
             const a = document.createElement('a');
             a.href = url;
             
-            const now = new Date();
-            const yyyy = now.getFullYear();
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            const hh = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const ss = String(now.getSeconds()).padStart(2, '0');
-            const timeStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+            let suffix = '';
+            if (targetSalesMonth) {
+                suffix = targetSalesMonth; 
+            } else {
+                const now = new Date();
+                const yyyy = now.getFullYear();
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                suffix = `${yyyy}${mm}`;
+            }
             
-            a.download = `line_items_master_${timeStr}.csv`;
+            a.download = `line_items_master_${suffix}.csv`;
             a.style.display = 'none';
             document.body.appendChild(a);
             a.click();
