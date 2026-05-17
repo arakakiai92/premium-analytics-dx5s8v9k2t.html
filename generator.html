@@ -33,7 +33,7 @@
         
         <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
             <h2 class="text-lg md:text-xl font-bold border-l-4 border-[#00C300] pl-3 text-gray-800">
-                作品マスタリスト生成ツール　※PC推奨
+                作品マスタリスト生成ツール
             </h2>
             
             <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-gray-700">
@@ -44,10 +44,14 @@
                     <li>抽出されたリストの<span class="font-bold text-red-500">※手入力</span>の項目（日本語タイトル・販売URL）を埋めます。</li>
                     <li>右下の<span class="font-bold text-[#00C300]">「📥 マスターCSVをダウンロード」</span>ボタンを押してデータを保存します。完成したCSVを分析アプリで読み込んでください。</li>
                 </ol>
-                <div class="mt-4 p-2 bg-white rounded border border-blue-100">
+                <div class="mt-4 p-3 bg-white rounded border border-blue-100 space-y-2">
                     <p class="text-xs text-blue-600 font-bold">
                         ♻️ 2回目以降の便利な使い方：<br>
-                        すでに作成済みの「マスターCSV」がある場合は、右側の「2」に読み込ませることで、過去の入力内容が一瞬で自動補完されます！新しい売上CSVと合わせて読み込ませることで、新作のみを手入力するだけで済みます。
+                        すでに作成済みの「マスターCSV」がある場合は、右側の「2」に読み込ませることで、過去の入力内容が一瞬で自動補完されます！
+                    </p>
+                    <p class="text-xs text-red-500 font-bold bg-red-50 p-2 rounded">
+                        ⚠️ 検索ボタンが消えてしまった場合：<br>
+                        マスターCSVだけを読み込むと「英語タイトル」が空になり検索できません。その場合は、左側の「1」にもう一度「売上CSV」をドラッグすると検索ボタンが復活します！
                     </p>
                 </div>
             </div>
@@ -60,7 +64,7 @@
                     <svg class="mx-auto h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
                 <p class="font-bold text-base mb-1">1. 新しい【売上CSV】をドロップ</p>
-                <p class="text-xs text-gray-500">ここから対象作品を抽出します</p>
+                <p class="text-xs text-gray-500">ここから対象作品を抽出・英語名を復活させます</p>
                 <input type="file" id="fileInputSales" class="hidden" accept=".csv" multiple>
             </div>
 
@@ -151,277 +155,4 @@
                     extractedItems = JSON.parse(savedData);
                     if (extractedItems.length > 0) renderTable();
                 } catch (e) {
-                    console.error("データの復元に失敗しました", e);
-                }
-            }
-        });
-
-        showOnlyEmptyCheckbox.addEventListener('change', renderTable);
-
-        // Sales Zone Events
-        dropzoneSales.addEventListener('click', () => fileInputSales.click());
-        fileInputSales.addEventListener('change', (e) => handleFile(e));
-        
-        // Master Zone Events
-        dropzoneMaster.addEventListener('click', () => fileInputMaster.click());
-        fileInputMaster.addEventListener('change', (e) => handleFile(e));
-
-        [dropzoneSales, dropzoneMaster].forEach(dz => {
-            dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('opacity-70'); });
-            dz.addEventListener('dragleave', () => dz.classList.remove('opacity-70'));
-        });
-
-        dropzoneSales.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzoneSales.classList.remove('opacity-70');
-            if(e.dataTransfer.files.length) {
-                fileInputSales.files = e.dataTransfer.files;
-                handleFile({ target: fileInputSales });
-            }
-        });
-
-        dropzoneMaster.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzoneMaster.classList.remove('opacity-70');
-            if(e.dataTransfer.files.length) {
-                fileInputMaster.files = e.dataTransfer.files;
-                handleFile({ target: fileInputMaster });
-            }
-        });
-
-        function handleFile(e) {
-            const files = e.target.files;
-            if (!files || files.length === 0) return;
-
-            Array.from(files).forEach(file => {
-                Papa.parse(file, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: function(results) { 
-                        const data = results.data;
-                        if (data.length === 0) return;
-                        
-                        // 文字コードのゴミ（BOM）を安全に除去する処理
-                        const cleanData = data.map(row => {
-                            const cleanRow = {};
-                            for (let key in row) {
-                                const cleanKey = key.replace(/^\uFEFF/, '').trim();
-                                cleanRow[cleanKey] = row[key];
-                            }
-                            return cleanRow;
-                        });
-
-                        // 読み込んだCSVが売上データか過去のマスターデータかを自動判定
-                        const isMasterCSV = cleanData[0].hasOwnProperty('日本語作品タイトル');
-                        processData(cleanData, isMasterCSV); 
-                    }
-                });
-            });
-            
-            e.target.value = ''; // リセット
-        }
-
-        function processData(data, isMasterCSV) {
-            const itemMap = new Map();
-            extractedItems.forEach(item => {
-                itemMap.set(item.id, item);
-            });
-            
-            let newAddedCount = 0;
-            let restoredCount = 0;
-
-            data.forEach(row => {
-                const id = row['Item ID'] || row['id']; 
-                if (!id) return;
-                
-                const type = row['Type'] || row['カテゴリ'] || '不明';
-
-                if (!itemMap.has(id)) {
-                    // 全く新しいIDの場合
-                    itemMap.set(id, {
-                        id: id,
-                        type: type,
-                        engTitle: row['Item Title'] || row['英語タイトルで検索'] || '', 
-                        jpTitle: row['日本語作品タイトル'] || '', 
-                        url: row['販売URL'] || '' 
-                    });
-                    newAddedCount++;
-                } else {
-                    // 既にリストにあるIDの場合、マスターデータを優先して穴埋めする
-                    const existing = itemMap.get(id);
-                    
-                    if (isMasterCSV) {
-                        if (row['日本語作品タイトル'] && !existing.jpTitle) {
-                            existing.jpTitle = row['日本語作品タイトル'];
-                            restoredCount++;
-                        }
-                        if (row['販売URL'] && !existing.url) {
-                            existing.url = row['販売URL'];
-                            restoredCount++;
-                        }
-                    } else {
-                        // 売上CSVの場合は英語タイトルだけ補完
-                        if (!existing.engTitle && row['Item Title']) {
-                            existing.engTitle = row['Item Title'];
-                        }
-                    }
-                }
-            });
-
-            extractedItems = Array.from(itemMap.values());
-            extractedItems.sort((a, b) => parseInt(b.id) - parseInt(a.id));
-            saveToLocalStorage();
-            
-            // 新規追加があれば、未入力のみ表示にしてすぐ作業できるようにする
-            if (newAddedCount > 0 && !showOnlyEmptyCheckbox.checked) {
-                showOnlyEmptyCheckbox.checked = true;
-            }
-            
-            renderTable();
-
-            // 通知
-            setTimeout(() => {
-                if (isMasterCSV) {
-                    alert(`✅ マスターCSVを読み込みました！\n過去に入力したデータが一瞬で復元・補完されました。`);
-                } else {
-                    if (newAddedCount > 0) {
-                        alert(`売上CSVから 新作 ${newAddedCount} 件 を追加しました！\n※「未入力の作品だけを表示」をONにしました。`);
-                    }
-                }
-            }, 100);
-        }
-
-        function saveToLocalStorage() {
-            localStorage.setItem('lineMasterApp_Data', JSON.stringify(extractedItems));
-            saveStatus.innerHTML = "🔄 保存中...";
-            saveStatus.classList.remove("text-green-600");
-            saveStatus.classList.add("text-blue-500");
-            setTimeout(() => {
-                saveStatus.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> 最新の状態が自動保存されています`;
-                saveStatus.classList.add("text-green-600");
-                saveStatus.classList.remove("text-blue-500");
-            }, 800);
-        }
-
-        function updateItemData(index, field, value) {
-            if (extractedItems[index]) {
-                extractedItems[index][field] = value;
-                saveToLocalStorage();
-            }
-        }
-
-        function renderTable() {
-            const showOnlyEmpty = showOnlyEmptyCheckbox.checked;
-            tbody.innerHTML = '';
-            
-            let displayedCount = 0;
-            
-            extractedItems.forEach((item, index) => {
-                const isJpEmpty = !item.jpTitle.trim();
-                const isUrlEmpty = !item.url.trim();
-                const isEmpty = isJpEmpty || isUrlEmpty;
-                
-                // フィルター処理
-                if (showOnlyEmpty && !isEmpty) return; 
-                
-                displayedCount++;
-                
-                const tr = document.createElement('tr');
-                tr.className = isEmpty ? 'bg-yellow-50/30 hover:bg-yellow-50 transition-colors' : 'hover:bg-gray-50 transition-colors';
-                
-                let typeClass = "bg-gray-100 text-gray-600";
-                if (item.type === 'Sticker') typeClass = "bg-blue-100 text-blue-700";
-                if (item.type === 'Emoji') typeClass = "bg-orange-100 text-orange-700";
-                if (item.type === 'Theme') typeClass = "bg-purple-100 text-purple-700";
-
-                const searchUrl = `https://store.line.me/search/ja?q=${encodeURIComponent(item.engTitle)}`;
-
-                const inputBgClassJp = isJpEmpty ? 'bg-yellow-50 focus:bg-white border-yellow-300' : 'bg-white border-gray-300';
-                const inputBgClassUrl = isUrlEmpty ? 'bg-yellow-50 focus:bg-white border-yellow-300' : 'bg-white border-gray-300';
-
-                tr.innerHTML = `
-                    <td class="px-4 py-3 font-mono text-xs align-middle">${item.id}</td>
-                    <td class="px-4 py-3 align-middle">
-                        <span class="px-2 py-1 rounded text-xs font-bold ${typeClass}">${item.type}</span>
-                    </td>
-                    <td class="px-4 py-3 align-middle">
-                        <div class="flex flex-col items-start gap-2">
-                            <span class="text-xs text-gray-600 font-mono">${item.engTitle}</span>
-                            <a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 px-3 py-1.5 rounded text-xs font-bold transition shadow-sm active:scale-95 no-underline">
-                                🔍 英語名でストア検索
-                            </a>
-                        </div>
-                    </td>
-                    <td class="px-4 py-3 align-middle">
-                        <input type="text" 
-                            class="w-full border rounded px-2 py-1.5 focus:ring-2 focus:ring-[#00C300] focus:border-transparent text-sm transition-colors ${inputBgClassJp}" 
-                            value="${item.jpTitle.replace(/"/g, '&quot;')}"
-                            oninput="updateItemData(${index}, 'jpTitle', this.value); this.classList.remove('bg-yellow-50', 'border-yellow-300'); this.classList.add('bg-white', 'border-gray-300');"
-                            placeholder="日本語タイトルをコピペ">
-                    </td>
-                    <td class="px-4 py-3 align-middle">
-                        <input type="text" 
-                            class="w-full border rounded px-2 py-1.5 focus:ring-2 focus:ring-[#00C300] focus:border-transparent text-sm text-blue-600 transition-colors ${inputBgClassUrl}" 
-                            value="${item.url}"
-                            oninput="updateItemData(${index}, 'url', this.value); this.classList.remove('bg-yellow-50', 'border-yellow-300'); this.classList.add('bg-white', 'border-gray-300');"
-                            placeholder="https://store.line.me/...">
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            document.getElementById('itemCount').textContent = extractedItems.length;
-            
-            if (showOnlyEmpty && displayedCount === 0 && extractedItems.length > 0) {
-                tbody.parentElement.classList.add('hidden');
-                emptyMessage.classList.remove('hidden');
-            } else {
-                tbody.parentElement.classList.remove('hidden');
-                emptyMessage.classList.add('hidden');
-            }
-
-            workspace.classList.remove('hidden');
-        }
-
-        document.getElementById('resetBtn').addEventListener('click', () => {
-            if (confirm("入力したデータがすべて消去されます！\n※事前にマスターCSVをダウンロードしておくことをおすすめします。\n\n本当によろしいですか？")) {
-                localStorage.removeItem('lineMasterApp_Data');
-                extractedItems = [];
-                fileInputSales.value = '';
-                fileInputMaster.value = '';
-                workspace.classList.add('hidden');
-            }
-        });
-
-        document.getElementById('downloadBtn').addEventListener('click', () => {
-            let csvContent = '\uFEFFItem ID,日本語作品タイトル,Type,販売URL\n';
-
-            extractedItems.forEach(item => {
-                const escapedTitle = item.jpTitle.replace(/"/g, '""');
-                csvContent += `${item.id},"${escapedTitle}",${item.type},"${item.url}"\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            
-            const now = new Date();
-            const yyyy = now.getFullYear();
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            const hh = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const ss = String(now.getSeconds()).padStart(2, '0');
-            const timeStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
-            
-            a.download = `line_items_master_${timeStr}.csv`;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-    </script>
-</body>
-</html>
+                    console.error("
