@@ -451,51 +451,62 @@
         };
 
         function downloadChart(canvasId, title) {
-            const chart = charts[canvasId];
-            if (!chart) return;
+        const chart = charts[canvasId];
+        if (!chart) return;
 
-            const originalCanvas = chart.canvas;
-            
-            // 裏側で画像合成用の新しいCanvas（画用紙）を作成
-            const newCanvas = document.createElement('canvas');
-            const ctx = newCanvas.getContext('2d');
-            
-            // Retina等の高解像度ディスプレイで文字がぼやけないようスケールを計算
-            const scale = originalCanvas.width / (originalCanvas.clientWidth || 1);
-            const titleHeight = 55 * scale; 
-            
-            // 新しいキャンバスのサイズを設定（元のグラフの高さ ＋ タイトル用の余白）
-            newCanvas.width = originalCanvas.width;
-            newCanvas.height = originalCanvas.height + titleHeight;
-            
-            // 1. 全体を白背景で塗りつぶす
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
-            
-            // 2. 上部の余白にタイトルを描画する
-            ctx.fillStyle = '#4b5563'; // Tailwindの text-gray-600 相当の色
-            ctx.font = `bold ${18 * scale}px sans-serif`; 
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            const cleanTitle = title.replace(/_/g, ' '); // アンダーバーをスペースに変換
-            ctx.fillText(cleanTitle, newCanvas.width / 2, titleHeight / 2); 
-            
-            // 3. タイトルの下に、元のグラフをそのままコピーして貼り付け
-            ctx.drawImage(originalCanvas, 0, titleHeight);
-            
-            // 保存処理
-            const now = new Date();
-            const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-            const imageURI = newCanvas.toDataURL('image/png');
-            
-            const link = document.createElement('a');
-            link.download = `${title}_${dateStr}.png`;
-            link.href = imageURI;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        const originalCanvas = chart.canvas;
+
+        // 裏側で画像合成用の新しいCanvasを作成
+        const newCanvas = document.createElement('canvas');
+        const ctx = newCanvas.getContext('2d');
+
+        const scale = originalCanvas.width / (originalCanvas.clientWidth || 1);
+        const titleHeight = 55 * scale;
+
+        newCanvas.width = originalCanvas.width;
+        newCanvas.height = originalCanvas.height + titleHeight;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+
+        ctx.fillStyle = '#4b5563';
+        ctx.font = `bold ${18 * scale}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const cleanTitle = title.replace(/_/g, ' ');
+        ctx.fillText(cleanTitle, newCanvas.width / 2, titleHeight / 2);
+
+        ctx.drawImage(originalCanvas, 0, titleHeight);
+
+        // DataURLからBlobへ変換してダウンロードさせる
+        const imageURI = newCanvas.toDataURL('image/png');
+        const byteString = atob(imageURI.split(',')[1]);
+        const mimeString = imageURI.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
         }
+    const blob = new Blob([ab], { type: mimeString });
+
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const fileName = `${cleanTitle}_${dateStr}.png`;
+
+    // リンクを生成してクリックさせる
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+
+    // 後処理
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
 
         function createChart(canvasId, type, labels, data, label, colors, extraOptions = {}, countData = null) {
             const ctx = document.getElementById(canvasId).getContext('2d');
