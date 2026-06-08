@@ -38,6 +38,10 @@
                 <a href="https://sales-graph-analyzer.vercel.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
                     📊売上スクショ分析
                 </a>
+                <button id="toggleNumbersBtn" onclick="toggleNumbers()" 
+                    class="text-xs md:text-sm font-bold text-white bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition whitespace-nowrap">
+                    🙈 数字を隠す
+                </button>
             </div>
         </div>
     </header>
@@ -338,6 +342,9 @@
     </footer>
 
     <script>
+        // ★追加：数字の表示/非表示トグル状態用のグローバル変数
+        let numbersHidden = false;
+
         // データ格納用変数
         let masterDataMap = {}; // { "Item ID": "日本語タイトル" }
         let globalItemUrls = {}; // { "日本語タイトル": "販売URL" }
@@ -402,7 +409,15 @@
                         ctx.lineWidth = 1;
                         ctx.stroke();
 
-                        ctx.fillStyle = '#000000';
+                        // ★修正：トグル連動で円グラフ引き出し線の文字を透明にし、影（シャドウ）だけをぼかして描画
+                        if (numbersHidden) {
+                            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                            ctx.shadowBlur = 5;
+                            ctx.fillStyle = 'transparent';
+                        } else {
+                            ctx.fillStyle = '#000000';
+                        }
+
                         ctx.font = 'bold 11px sans-serif';
                         ctx.textBaseline = 'middle';
                         ctx.textAlign = isRight ? 'left' : 'right';
@@ -518,6 +533,9 @@
             const pluginsToUse = [whiteBackgroundPlugin];
             if (isPie) pluginsToUse.push(pieLabelsLinePlugin);
 
+            // ★修正：横棒か縦棒かを正しく判定
+            const isHorizontal = extraOptions.indexAxis === 'y';
+
             const config = {
                 type: type,
                 data: {
@@ -537,7 +555,6 @@
                     layout: {
                         padding: isPie ? { top: 20, bottom: 20, left: 20, right: 20 } : 0
                     },
-                    // ★追加: グラフクリック＆ホバーイベント
                     onClick: (event, elements, chart) => {
                         if (elements.length > 0 && !isPie) {
                             const index = elements[0].index;
@@ -553,6 +570,23 @@
                             event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
                         }
                     },
+                    // ★修正：数値が入る軸だけをトグル連動で隠し、文字（作品名など）の軸は常に表示
+                    scales: isPie ? undefined : {
+                        x: { 
+                            ticks: { 
+                                display: isHorizontal ? !numbersHidden : true,
+                                font: { size: 10 }
+                            }, 
+                            ...((extraOptions.scales && extraOptions.scales.x) || {}) 
+                        },
+                        y: { 
+                            ticks: { 
+                                display: isHorizontal ? true : !numbersHidden,
+                                font: { size: 10 }
+                            }, 
+                            ...((extraOptions.scales && extraOptions.scales.y) || {}) 
+                        }
+                    },
                     plugins: { 
                         legend: { 
                             display: isPie,
@@ -561,7 +595,10 @@
                         },
                         datalabels: {
                             display: !isPie,
-                            color: '#000000', 
+                            // ★修正：テキストシャドウを使って数値を優しくぼかす設定
+                            color: numbersHidden ? 'transparent' : '#000000', 
+                            textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
+                            textShadowBlur: numbersHidden ? 5 : 0,
                             font: { weight: 'bold', size: 10 },
                             anchor: 'end', 
                             align: 'end',
@@ -609,7 +646,6 @@
         categoryTrendCountrySelect.addEventListener('change', () => { renderDashboard(); });
         
         targetRevenueInput.addEventListener('input', updateTargetMeter);
-        
         currentRevenueInput.addEventListener('input', updateTargetMeter);
 
         function setupFilters() {
@@ -635,7 +671,6 @@
                     const revenue = parseFloat(row["Revenue Share"]) || 0;
                     itemTotalRev[title] = (itemTotalRev[title] || 0) + revenue;
 
-                    // URLがマスターデータにない場合のフォールバック自動生成
                     if (!globalItemUrls[title] && id) {
                         let fallbackUrl = '';
                         if (type === 'Sticker') fallbackUrl = `https://store.line.me/stickershop/product/${id}/ja`;
@@ -752,7 +787,7 @@
             } else if (countryList.includes('JP')) {
                 countryItemRankSelect.value = 'JP'; 
             }
-            // ▼ここから追加：推移グラフ用の国プルダウン生成▼
+            
             const lastTrendCountrySelected = categoryTrendCountrySelect.value;
             categoryTrendCountrySelect.innerHTML = '<option value="ALL">すべての国 (全国)</option>';
             countryList.forEach(c => {
@@ -766,7 +801,6 @@
             } else {
                 categoryTrendCountrySelect.value = 'ALL';
             }
-            // ▲ここまで追加▲
 
             const itemList = Object.keys(itemTotalRev).sort((a, b) => itemTotalRev[b] - itemTotalRev[a]);
             const lastTrackedItem = itemTrackSelect.value;
@@ -811,7 +845,6 @@
             const countries = {};
             const types = {};
 
-            // ▼今回追加：国内・海外の売上集計用変数
             const monthlyJpRev = {};
             const monthlyOverseasRev = {};
             const monthlyOverseasByType = {};
@@ -820,14 +853,13 @@
             currentItemsRevByCountry = {}; 
             globalItemRevByMonthAndTitle = {}; 
             globalItemTypes = {}; 
-            globalMonthlyTotal = {}; // ★今回追加：トレンド分析用
+            globalMonthlyTotal = {}; 
 
             globalData.forEach(row => {
                 const dateStr = row["From (GMT+9:00)"];
                 if (!dateStr) return;
                 const month = dateStr.substring(0, 7); 
                 
-                // ★今回追加：トレンド分析用に月別の総額を記録
                 const revenueRaw = parseFloat(row["Revenue Share"]) || 0;
                 globalMonthlyTotal[month] = (globalMonthlyTotal[month] || 0) + revenueRaw;
                 
@@ -849,14 +881,11 @@
                     country = country.trim();
                 }
 
-                // ▼今回追加：国内・海外の振り分け処理
-                // ▼今回追加：国内・海外の振り分け処理
                 if (country === 'JP') {
                     monthlyJpRev[month] = (monthlyJpRev[month] || 0) + revenue;
                 } else {
                     monthlyOverseasRev[month] = (monthlyOverseasRev[month] || 0) + revenue;
                     
-                    // ▼★追加：海外限定のカテゴリ別集計
                     if (!monthlyOverseasByType[month]) monthlyOverseasByType[month] = {};
                     monthlyOverseasByType[month][type] = (monthlyOverseasByType[month][type] || 0) + revenue;
                 }
@@ -894,7 +923,6 @@
             document.getElementById('kpiNetRevenue').textContent = `¥${netRevenue.toLocaleString()}`;
             document.getElementById('kpiSalesCount').textContent = totalSalesCount.toLocaleString();
             
-            // No.1アイテムのテキストをURL化
             const topItem = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a])[0];
             const kpiLink = document.getElementById('kpiTopItem');
             if (topItem) {
@@ -954,14 +982,18 @@
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
+                    // ★修正：横棒グラフなので、X軸（金額）だけをトグル連動、Y軸（月）は常に表示
                     scales: {
-                        x: { stacked: (targetMonthlyCat === 'ALL'), beginAtZero: true }, 
-                        y: { stacked: (targetMonthlyCat === 'ALL') }                     
+                        x: { stacked: (targetMonthlyCat === 'ALL'), beginAtZero: true, ticks: { display: !numbersHidden } }, 
+                        y: { stacked: (targetMonthlyCat === 'ALL'), ticks: { display: true } }                     
                     },
                     plugins: {
                         legend: { display: true, position: 'top' },
                         datalabels: {
-                            color: '#000000', 
+                            // ★修正：月別推移グラフ内の数値を優しくぼかす
+                            color: numbersHidden ? 'transparent' : '#000000', 
+                            textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
+                            textShadowBlur: numbersHidden ? 5 : 0,
                             font: { weight: 'bold', size: 10 },
                             anchor: 'center', 
                             align: 'center',
@@ -977,7 +1009,6 @@
             const avgContainer = document.getElementById('monthlyAverageContainer');
             if (avgContainer) {
                 if (sortedMonths.length > 0) {
-                    // クラスを上書きして以前のバッジ用デザインをリセット
                     avgContainer.className = 'mb-6 w-full bg-white p-3 rounded-xl border border-gray-100 shadow-sm'; 
                     avgContainer.innerHTML = `
                         <div class="flex justify-between items-center mb-2 border-b pb-1">
@@ -1016,7 +1047,6 @@
                         momRates.push(momText);
                     });
 
-                    // 折れ線グラフの描画
                     const ctxDaily = document.getElementById('dailyAvgChart').getContext('2d');
                     if (charts['dailyAvgChart']) charts['dailyAvgChart'].destroy();
                     charts['dailyAvgChart'] = new Chart(ctxDaily, {
@@ -1026,14 +1056,14 @@
                             datasets: [{
                                 label: '1日平均売上 (円)',
                                 data: dailyAvgs,
-                                backgroundColor: 'rgba(245, 158, 11, 0.1)', // オレンジ系
+                                backgroundColor: 'rgba(245, 158, 11, 0.1)', 
                                 borderColor: 'rgba(245, 158, 11, 1)',
                                 borderWidth: 2,
                                 pointBackgroundColor: '#ffffff',
                                 pointBorderColor: 'rgba(245, 158, 11, 1)',
                                 pointBorderWidth: 2,
                                 pointRadius: 4,
-                                tension: 0.3, // 少し丸みを持たせる
+                                tension: 0.3, 
                                 fill: true
                             }]
                         },
@@ -1047,12 +1077,21 @@
                             plugins: {
                                 legend: { display: false },
                                 datalabels: {
-                                    color: (context) => {
+                                    // ★修正：1日平均売上グラフの数値・パーセントを優しくぼかす
+                                    color: numbersHidden ? 'transparent' : (context) => {
                                         const rate = momRates[context.dataIndex];
-                                        if (rate && rate.startsWith('+')) return '#059669'; // プラスは緑
-                                        if (rate && rate.startsWith('-')) return '#DC2626'; // マイナスは赤
-                                        return '#4B5563'; // その他はグレー
+                                        if (rate && rate.startsWith('+')) return '#059669'; 
+                                        if (rate && rate.startsWith('-')) return '#DC2626'; 
+                                        return '#4B5563'; 
                                     },
+                                    textShadowColor: (context) => {
+                                        if (!numbersHidden) return 'transparent';
+                                        const rate = momRates[context.dataIndex];
+                                        if (rate && rate.startsWith('+')) return 'rgba(5, 150, 105, 0.6)'; 
+                                        if (rate && rate.startsWith('-')) return 'rgba(220, 38, 38, 0.6)'; 
+                                        return 'rgba(75, 85, 99, 0.6)'; 
+                                    },
+                                    textShadowBlur: numbersHidden ? 5 : 0,
                                     font: { weight: 'bold', size: 10 },
                                     anchor: 'end',
                                     align: 'top',
@@ -1130,7 +1169,12 @@
                     const colorClass = item.diff >= 0 ? 'text-emerald-600' : 'text-red-500';
                     const row = document.createElement('div');
                     row.className = 'flex justify-between items-center text-xs md:text-sm font-bold p-2 bg-gray-50 rounded-lg';
-                    row.innerHTML = `<span class="truncate max-w-[60%]">${item.title}</span><span class="${colorClass}">${sign}¥${Math.abs(item.diff).toLocaleString()}</span>`;
+                    
+                    // ★修正：急上昇トレンド内の数値だけを優しく直接CSSでぼかす
+                    const blurStyle = numbersHidden ? 'style="filter: blur(5px); user-select: none;"' : '';
+                    const displayDiff = `¥${Math.abs(item.diff).toLocaleString()}`;
+                    row.innerHTML = `<span class="truncate max-w-[60%]">${item.title}</span><span class="${colorClass}">${sign}<span ${blurStyle}>${displayDiff}</span></span>`;
+                    
                     trendArea.appendChild(row);
                 });
             } else {
@@ -1155,17 +1199,20 @@
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
+                    // ★修正：縦棒グラフなので、X軸（月）は常に表示、Y軸（金額）をトグル連動で隠す
+                    scales: { 
+                        x: { stacked: true, ticks: { display: true } }, 
+                        y: { stacked: true, beginAtZero: true, ticks: { display: !numbersHidden } } 
+                    },
                     plugins: { datalabels: { display: false } }
                 },
                 plugins: [whiteBackgroundPlugin]
             });
+
             // ▼★追加：直近半年のカテゴリ比率 (海外限定)
             const overseasMonthsAll = Object.keys(monthlyOverseasByType).sort();
-            // 直近6ヶ月分のみを抽出
             const recentOverseasMonths = overseasMonthsAll.slice(-6);
             
-            // 直近半年のカテゴリ別売上を合計する
             const totalOverseasByType = {};
             recentOverseasMonths.forEach(m => {
                 Object.keys(monthlyOverseasByType[m] || {}).forEach(type => {
@@ -1199,7 +1246,10 @@
                         legend: { display: true, position: 'bottom' },
                         datalabels: {
                             display: true,
-                            color: '#000000',
+                            // ★修正：ドーナツグラフ（シェア％数値）を優しくぼかす
+                            color: numbersHidden ? 'transparent' : '#000000',
+                            textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
+                            textShadowBlur: numbersHidden ? 5 : 0,
                             font: { weight: 'bold', size: 12 },
                             formatter: (value, context) => {
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
@@ -1211,6 +1261,7 @@
                 },
                 plugins: [whiteBackgroundPlugin]
             });
+
             // ▼ここから追加：カテゴリ別の推移グラフ描画（国別フィルタリング対応）▼
             const targetTrendCountry = categoryTrendCountrySelect.value || 'ALL';
             const trendMonthlyByType = {}; 
@@ -1245,7 +1296,6 @@
             createChart('stickerTrendChart', 'bar', sortedMonthsTrendAll, stickerData, '収益 (円)', typeColors['Sticker'] || defaultColor, trendOptions);
             createChart('emojiTrendChart', 'bar', sortedMonthsTrendAll, emojiData, '収益 (円)', typeColors['Emoji'] || defaultColor, trendOptions);
             createChart('themeTrendChart', 'bar', sortedMonthsTrendAll, themeData, '収益 (円)', typeColors['Theme'] || defaultColor, trendOptions);
-            // ▲ここまで追加▲
 
             generateAIComment();
         }
@@ -1340,14 +1390,12 @@
                 
                 if (!selectedMonths.has(month)) return;
 
-                // 12月と1月を除外
                 const mStr = month.slice(-2);
                 if (mStr === "12" || mStr === "01") return; 
 
                 const revenue = parseFloat(row["Revenue Share"]) || 0;
                 const count = parseInt(row["Sales Counts"]) || 0;
                 
-                // 日本語マスターデータ対応のタイトル取得
                 const id = row["Item ID"];
                 const title = id ? (masterDataMap[id] || row["Item Title"] || "不明") : (row["Item Title"] || "不明");
                 
@@ -1465,6 +1513,38 @@
         }
 
         updateTargetMeter();
+
+        // ★追加：数字の表示/非表示トグル処理
+        function toggleNumbers() {
+            numbersHidden = !numbersHidden;
+            const btn = document.getElementById('toggleNumbersBtn');
+
+            // HTML側のKPIや入力欄などのマスク（ぼかし）処理
+            const targetIds = [
+                'kpiRevenue', 'kpiNetRevenue', 'kpiSalesCount',
+                'targetProgressText'
+            ];
+
+            targetIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.style.filter = numbersHidden ? 'blur(6px)' : 'none';
+                el.style.userSelect = numbersHidden ? 'none' : '';
+            });
+
+            ['targetRevenueInput', 'currentRevenueInput'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.style.filter = numbersHidden ? 'blur(6px)' : 'none';
+            });
+
+            btn.textContent = numbersHidden ? '👁️ 数字を表示' : '🙈 数字を隠す';
+
+            // 既にCSVデータが読み込まれている場合は、再描画してグラフにも変更を反映
+            if (globalData && globalData.length > 0) {
+                renderDashboard();
+            }
+        }
     </script>
 </body>
 </html>
