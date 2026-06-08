@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <style>
         /* 背景はクリーンな白固定 */
         body { background-color: #ffffff; font-family: sans-serif; }
@@ -48,8 +49,17 @@
     
     <main class="p-4 max-w-6xl mx-auto space-y-6">
         
-        <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4 mb-4">
+        <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 relative">
+            <div id="cacheStatusArea" class="hidden absolute top-4 right-4 flex items-center gap-3">
+                <span class="bg-green-100 text-green-800 text-[10px] md:text-xs font-bold px-2 py-1 rounded shadow-sm">
+                    💾 前回のデータを自動復元しました
+                </span>
+                <button onclick="clearCache()" class="text-[10px] md:text-xs font-bold text-red-500 hover:text-red-700 underline transition">
+                    🗑️ リセット
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4 mb-4 mt-8 md:mt-4">
                 <div class="border p-4 rounded-lg bg-gray-50">
                     <label class="block mb-2 text-sm font-bold text-gray-700">1. 売上CSVを一括選択 (必須):</label>
                     <input type="file" id="csvFileInput" multiple accept=".csv" class="block w-full text-sm text-gray-500
@@ -342,7 +352,7 @@
     </footer>
 
     <script>
-        // ★追加：数字の表示/非表示トグル状態用のグローバル変数
+        // 数字の表示/非表示トグル状態用のグローバル変数
         let numbersHidden = false;
 
         // データ格納用変数
@@ -409,7 +419,6 @@
                         ctx.lineWidth = 1;
                         ctx.stroke();
 
-                        // ★修正：トグル連動で円グラフ引き出し線の文字を透明にし、影（シャドウ）だけをぼかして描画
                         if (numbersHidden) {
                             ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
                             ctx.shadowBlur = 5;
@@ -452,6 +461,7 @@
         let currentItemsRevByCountry = {}; 
         let globalItemRevByMonthAndTitle = {}; 
         let globalItemTypes = {}; 
+        let globalMonthlyTotal = {};
 
         const typeColors = {
             "Sticker": { bg: "rgba(236, 72, 153, 0.8)", border: "rgba(236, 72, 153, 1)" }, 
@@ -470,6 +480,28 @@
                 ctx.restore();
             }
         };
+
+        // ★追加：画面起動時の自動キャッシュ復元処理
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // マスターデータとURL情報の復元
+                const cachedMaster = await localforage.getItem('lineMasterData');
+                const cachedUrls = await localforage.getItem('lineItemUrls');
+                if (cachedMaster) masterDataMap = cachedMaster;
+                if (cachedUrls) globalItemUrls = cachedUrls;
+
+                // 売上CSVデータの復元
+                const cachedData = await localforage.getItem('lineSalesData');
+                if (cachedData && cachedData.length > 0) {
+                    globalData = cachedData;
+                    setupFilters();
+                    renderDashboard();
+                    document.getElementById('cacheStatusArea').classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("データの復元に失敗しました", err);
+            }
+        });
 
         // マスターデータ読み込み処理 (複数ファイル対応)
         masterFileInput.addEventListener('change', (e) => {
@@ -498,6 +530,10 @@
                         });
                         filesRead++;
                         if (filesRead === files.length) {
+                            // ★変更：マスターデータも永続キャッシュに保存
+                            localforage.setItem('lineMasterData', masterDataMap);
+                            localforage.setItem('lineItemUrls', globalItemUrls);
+
                             alert(`${count}件のマスターデータを読み込みました！グラフを日本語表記に更新します。`);
                             if (globalData.length > 0) {
                                 setupFilters();
@@ -523,7 +559,7 @@
             document.body.removeChild(link);
         }
 
-        // グラフ描画（リンク遷移・クリックイベント追加）
+        // グラフ描画
         function createChart(canvasId, type, labels, data, label, colors, extraOptions = {}) {
             const ctx = document.getElementById(canvasId).getContext('2d');
             if (charts[canvasId]) charts[canvasId].destroy();
@@ -533,7 +569,6 @@
             const pluginsToUse = [whiteBackgroundPlugin];
             if (isPie) pluginsToUse.push(pieLabelsLinePlugin);
 
-            // ★修正：横棒か縦棒かを正しく判定
             const isHorizontal = extraOptions.indexAxis === 'y';
 
             const config = {
@@ -570,7 +605,6 @@
                             event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
                         }
                     },
-                    // ★修正：数値が入る軸だけをトグル連動で隠し、文字（作品名など）の軸は常に表示
                     scales: isPie ? undefined : {
                         x: { 
                             ticks: { 
@@ -595,7 +629,6 @@
                         },
                         datalabels: {
                             display: !isPie,
-                            // ★修正：テキストシャドウを使って数値を優しくぼかす設定
                             color: numbersHidden ? 'transparent' : '#000000', 
                             textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
                             textShadowBlur: numbersHidden ? 5 : 0,
@@ -615,6 +648,15 @@
             charts[canvasId] = new Chart(ctx, config);
         }
 
+        // ★追加：リセットボタン処理（すべてのキャッシュを削除）
+        function clearCache() {
+            if (confirm("ブラウザに記憶されているすべてのデータ（売上履歴・日本語マスター）を消去して初期状態に戻しますか？")) {
+                localforage.clear().then(() => {
+                    location.reload();
+                });
+            }
+        }
+
         fileInput.addEventListener('change', (event) => {
             const files = event.target.files;
             if (files.length === 0) return;
@@ -631,8 +673,14 @@
                         filesRead++;
                         if (filesRead === files.length) {
                             globalData = parsedData;
+                            
+                            // ★修正：読み込んだ売上CSVデータを永続保存
+                            localforage.setItem('lineSalesData', globalData);
+
                             setupFilters();
                             renderDashboard();
+
+                            document.getElementById('cacheStatusArea').classList.remove('hidden');
                         }
                     }
                 });
@@ -982,7 +1030,9 @@
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
-                    // ★修正：横棒グラフなので、X軸（金額）だけをトグル連動、Y軸（月）は常に表示
+                    layout: {
+                        padding: { right: 80 } 
+                    },
                     scales: {
                         x: { stacked: (targetMonthlyCat === 'ALL'), beginAtZero: true, ticks: { display: !numbersHidden } }, 
                         y: { stacked: (targetMonthlyCat === 'ALL'), ticks: { display: true } }                     
@@ -990,7 +1040,6 @@
                     plugins: {
                         legend: { display: true, position: 'top' },
                         datalabels: {
-                            // ★修正：月別推移グラフ内の数値を優しくぼかす
                             color: numbersHidden ? 'transparent' : '#000000', 
                             textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
                             textShadowBlur: numbersHidden ? 5 : 0,
@@ -1077,7 +1126,6 @@
                             plugins: {
                                 legend: { display: false },
                                 datalabels: {
-                                    // ★修正：1日平均売上グラフの数値・パーセントを優しくぼかす
                                     color: numbersHidden ? 'transparent' : (context) => {
                                         const rate = momRates[context.dataIndex];
                                         if (rate && rate.startsWith('+')) return '#059669'; 
@@ -1149,7 +1197,6 @@
             drawCountryItemRankChart(); 
             drawItemTrackChart(); 
 
-            // ▼今回追加：トレンド分析リストの描画処理
             const trendArea = document.getElementById('trendArea');
             trendArea.innerHTML = '';
             const sortedMonthsTrend = Object.keys(globalMonthlyTotal).sort();
@@ -1170,7 +1217,6 @@
                     const row = document.createElement('div');
                     row.className = 'flex justify-between items-center text-xs md:text-sm font-bold p-2 bg-gray-50 rounded-lg';
                     
-                    // ★修正：急上昇トレンド内の数値だけを優しく直接CSSでぼかす
                     const blurStyle = numbersHidden ? 'style="filter: blur(5px); user-select: none;"' : '';
                     const displayDiff = `¥${Math.abs(item.diff).toLocaleString()}`;
                     row.innerHTML = `<span class="truncate max-w-[60%]">${item.title}</span><span class="${colorClass}">${sign}<span ${blurStyle}>${displayDiff}</span></span>`;
@@ -1181,7 +1227,6 @@
                 trendArea.innerHTML = '<p class="text-xs text-gray-400">※2ヶ月分以上のデータを読み込むと分析結果が表示されます。</p>';
             }
 
-            // ▼今回追加：国内 vs 海外チャートの描画処理
             const jpOvLabels = Object.keys(monthlyTotal).sort();
             const dataJp = jpOvLabels.map(m => monthlyJpRev[m] || 0);
             const dataOverseas = jpOvLabels.map(m => monthlyOverseasRev[m] || 0);
@@ -1199,7 +1244,6 @@
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    // ★修正：縦棒グラフなので、X軸（月）は常に表示、Y軸（金額）をトグル連動で隠す
                     scales: { 
                         x: { stacked: true, ticks: { display: true } }, 
                         y: { stacked: true, beginAtZero: true, ticks: { display: !numbersHidden } } 
@@ -1209,7 +1253,6 @@
                 plugins: [whiteBackgroundPlugin]
             });
 
-            // ▼★追加：直近半年のカテゴリ比率 (海外限定)
             const overseasMonthsAll = Object.keys(monthlyOverseasByType).sort();
             const recentOverseasMonths = overseasMonthsAll.slice(-6);
             
@@ -1246,7 +1289,6 @@
                         legend: { display: true, position: 'bottom' },
                         datalabels: {
                             display: true,
-                            // ★修正：ドーナツグラフ（シェア％数値）を優しくぼかす
                             color: numbersHidden ? 'transparent' : '#000000',
                             textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
                             textShadowBlur: numbersHidden ? 5 : 0,
@@ -1262,7 +1304,6 @@
                 plugins: [whiteBackgroundPlugin]
             });
 
-            // ▼ここから追加：カテゴリ別の推移グラフ描画（国別フィルタリング対応）▼
             const targetTrendCountry = categoryTrendCountrySelect.value || 'ALL';
             const trendMonthlyByType = {}; 
             const sortedMonthsTrendAll = Object.keys(monthlyByType).sort();
@@ -1470,7 +1511,7 @@
                     
                     countryAdviceHtml = `<p>国内（日本市場）が全体のベース収益を力強く支えているため、次なる成長エンジンは「海外展開」にあります。特に注目すべきは海外トップの【<strong class="text-gray-900">${topOverseasCountryJa}市場（全体の${overseasRatio.toFixed(1)}%）</strong>】です。国内向けのエース作品をベースに、${localizeHint}を取り入れたローカライズ版を投下することで、少ない労力で効率よく新規ファンを開拓・拡大できるフェーズです。</p>`;
                 } else {
-                    countryAdviceHtml = `<p>現在、売上のほぼすべてが【<strong class="text-gray-900">日本市場（JP）</strong>】で構成されており、国内での盤石な土台ができています。次の一手として、文字に依存しない「動き・表情・ジェスチャー」メインのスタンプを投入し、台湾やタイなどの新規海外市場の反応を見るテストを行うのに最適な時期です。</p>`;
+                    countryAdviceHtml = `<p>現在、売上のほぼすべてが【<strong class="text-gray-900">日本市場（JP）</strong>】で構成されており、国内での盤石な土台ができています。次の一手として、文字に依存しない「動き・表情・ジェスチャー」メイン of スタンプを投入し、台湾やタイなどの新規海外市場の反応を見るテストを行うのに最適な時期です。</p>`;
                 }
             } else if (topCountry === 'TW') {
                 countryAdviceHtml = `<p>素晴らしいことに【<strong class="text-gray-900">台湾市場（TW）</strong>】での支持が最大の熱量を見せています！台湾ユーザーには「繁体字」を使った挨拶や、ちょっと大げさでユーモアのあるリアクションが非常に好まれます。台湾の日常的なトレンドを取り入れたリリースを組み込むと爆発的な効果が期待できます。</p>`;
@@ -1481,7 +1522,7 @@
             let html = `
                 <div class="p-4 bg-green-50 rounded-xl border border-green-100 text-gray-700 space-y-4 relative overflow-hidden">
                     <div class="absolute top-0 right-0 bg-green-200 text-green-800 text-[10px] font-bold px-2 py-1 rounded-bl-lg opacity-80 shadow-sm">
-                        ※あけおめ時期(12月・1月)を除外した分析
+                        ※あけおめ時期(12月・1月)を除外した analysis
                     </div>
                     <div class="pt-2">
                         <p class="font-bold text-[#00C300] text-base mb-1">📊 通常期の販売動向</p>
@@ -1514,12 +1555,10 @@
 
         updateTargetMeter();
 
-        // ★追加：数字の表示/非表示トグル処理
         function toggleNumbers() {
             numbersHidden = !numbersHidden;
             const btn = document.getElementById('toggleNumbersBtn');
 
-            // HTML側のKPIや入力欄などのマスク（ぼかし）処理
             const targetIds = [
                 'kpiRevenue', 'kpiNetRevenue', 'kpiSalesCount',
                 'targetProgressText'
@@ -1540,7 +1579,6 @@
 
             btn.textContent = numbersHidden ? '👁️ 数字を表示' : '🙈 数字を隠す';
 
-            // 既にCSVデータが読み込まれている場合は、再描画してグラフにも変更を反映
             if (globalData && globalData.length > 0) {
                 renderDashboard();
             }
