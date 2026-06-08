@@ -29,7 +29,7 @@
         <div class="max-w-6xl mx-auto flex items-center justify-between px-4">
             <div class="flex items-center">
                 <img src="top-left.png" alt="シーサーアイコン" class="h-16 w-auto block object-contain">
-                <h1 class="text-lg md:text-xl font-bold ml-3 py-4">LINE Sales Analytics</h1>
+                <h1 class="text-lg md:text-xl font-bold ml-3 py-4">LINE Sales Analytics Pro+</h1>
             </div>
             <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 py-2 sm:py-0">
                 <a href="https://aalinezipmaker.netlify.app/" target="_blank" rel="noopener noreferrer" class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap">
@@ -274,6 +274,52 @@
                 </div>
                 <div class="chart-container" style="height: 300px;"><canvas id="overseasCategoryRatioChart"></canvas></div>
             </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2">
+                    <h2 class="text-sm md:text-base font-bold text-gray-700 flex items-center gap-1">
+                        📊 カテゴリ別 売上推移
+                    </h2>
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <span class="text-xs font-bold text-gray-500 whitespace-nowrap">表示国:</span>
+                        <select id="categoryTrendCountrySelect" class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]">
+                            <option value="ALL">すべての国 (全国)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="flex justify-between items-center border-b pb-1 mb-3">
+                            <h3 class="text-xs font-bold text-gray-600">🎨 スタンプ</h3>
+                            <button onclick="downloadChart('stickerTrendChart', 'スタンプ売上推移')" class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition">
+                                📥 保存
+                            </button>
+                        </div>
+                        <div class="chart-container" style="height: 180px;"><canvas id="stickerTrendChart"></canvas></div>
+                    </div>
+
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="flex justify-between items-center border-b pb-1 mb-3">
+                            <h3 class="text-xs font-bold text-gray-600">✨ 絵文字</h3>
+                            <button onclick="downloadChart('emojiTrendChart', '絵文字売上推移')" class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition">
+                                📥 保存
+                            </button>
+                        </div>
+                        <div class="chart-container" style="height: 180px;"><canvas id="emojiTrendChart"></canvas></div>
+                    </div>
+
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="flex justify-between items-center border-b pb-1 mb-3">
+                            <h3 class="text-xs font-bold text-gray-600">👗 着せかえ</h3>
+                            <button onclick="downloadChart('themeTrendChart', '着せかえ売上推移')" class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition">
+                                📥 保存
+                            </button>
+                        </div>
+                        <div class="chart-container" style="height: 180px;"><canvas id="themeTrendChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
                 <h2 class="text-sm md:text-base font-bold mb-4 text-gray-700 border-b pb-2 flex items-center gap-2">
                     🤖 AI 売上簡易分析レポート
@@ -379,7 +425,8 @@
         const countryItemRankSelect = document.getElementById('countryItemRankSelect'); 
         const itemTrackSelect = document.getElementById('itemTrackSelect'); 
         const targetRevenueInput = document.getElementById('targetRevenueInput'); 
-        const currentRevenueInput = document.getElementById('currentRevenueInput'); 
+        const currentRevenueInput = document.getElementById('currentRevenueInput');
+        const categoryTrendCountrySelect = document.getElementById('categoryTrendCountrySelect'); 
         
         let globalData = []; 
         let availableMonths = [];
@@ -559,8 +606,10 @@
         categoryRankSelect.addEventListener('change', () => { drawCategoryRankChart(); });
         countryItemRankSelect.addEventListener('change', () => { drawCountryItemRankChart(); });
         itemTrackSelect.addEventListener('change', () => { drawItemTrackChart(); }); 
+        categoryTrendCountrySelect.addEventListener('change', () => { renderDashboard(); });
         
         targetRevenueInput.addEventListener('input', updateTargetMeter);
+        
         currentRevenueInput.addEventListener('input', updateTargetMeter);
 
         function setupFilters() {
@@ -703,6 +752,21 @@
             } else if (countryList.includes('JP')) {
                 countryItemRankSelect.value = 'JP'; 
             }
+            // ▼ここから追加：推移グラフ用の国プルダウン生成▼
+            const lastTrendCountrySelected = categoryTrendCountrySelect.value;
+            categoryTrendCountrySelect.innerHTML = '<option value="ALL">すべての国 (全国)</option>';
+            countryList.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c;
+                option.textContent = c === 'JP' ? '日本 (JP)' : c === 'TW' ? '台湾 (TW)' : c === 'TH' ? 'タイ (TH)' : c;
+                categoryTrendCountrySelect.appendChild(option);
+            });
+            if (['ALL', ...countryList].includes(lastTrendCountrySelected)) {
+                categoryTrendCountrySelect.value = lastTrendCountrySelected;
+            } else {
+                categoryTrendCountrySelect.value = 'ALL';
+            }
+            // ▲ここまで追加▲
 
             const itemList = Object.keys(itemTotalRev).sort((a, b) => itemTotalRev[b] - itemTotalRev[a]);
             const lastTrackedItem = itemTrackSelect.value;
@@ -1090,8 +1154,43 @@
                 },
                 plugins: [whiteBackgroundPlugin]
             });
+            // ▼ここから追加：カテゴリ別の推移グラフ描画（国別フィルタリング対応）▼
+            const targetTrendCountry = categoryTrendCountrySelect.value || 'ALL';
+            const trendMonthlyByType = {}; 
+            const sortedMonthsTrendAll = Object.keys(monthlyByType).sort();
 
-            generateAIComment(totalRevenue, totalSalesCount, topItem, types, countries);
+            globalData.forEach(row => {
+                const dateStr = row["From (GMT+9:00)"];
+                if (!dateStr) return;
+                const month = dateStr.substring(0, 7);
+                if (!selectedMonths.has(month)) return;
+
+                const country = row["Country of Sale"] || "不明";
+                if (targetTrendCountry !== 'ALL' && country !== targetTrendCountry) return;
+
+                const revenue = parseFloat(row["Revenue Share"]) || 0;
+                const type = row["Type"] || "不明";
+
+                if (!trendMonthlyByType[month]) trendMonthlyByType[month] = {};
+                trendMonthlyByType[month][type] = (trendMonthlyByType[month][type] || 0) + revenue;
+            });
+
+            const stickerData = sortedMonthsTrendAll.map(m => (trendMonthlyByType[m] && trendMonthlyByType[m]['Sticker']) ? trendMonthlyByType[m]['Sticker'] : 0);
+            const emojiData = sortedMonthsTrendAll.map(m => (trendMonthlyByType[m] && trendMonthlyByType[m]['Emoji']) ? trendMonthlyByType[m]['Emoji'] : 0);
+            const themeData = sortedMonthsTrendAll.map(m => (trendMonthlyByType[m] && trendMonthlyByType[m]['Theme']) ? trendMonthlyByType[m]['Theme'] : 0);
+
+            const trendOptions = { 
+                layout: { padding: { top: 20, right: 10 } }, 
+                scales: { y: { beginAtZero: true } },
+                plugins: { datalabels: { display: false } }
+            };
+
+            createChart('stickerTrendChart', 'bar', sortedMonthsTrendAll, stickerData, '収益 (円)', typeColors['Sticker'] || defaultColor, trendOptions);
+            createChart('emojiTrendChart', 'bar', sortedMonthsTrendAll, emojiData, '収益 (円)', typeColors['Emoji'] || defaultColor, trendOptions);
+            createChart('themeTrendChart', 'bar', sortedMonthsTrendAll, themeData, '収益 (円)', typeColors['Theme'] || defaultColor, trendOptions);
+            // ▲ここまで追加▲
+
+            generateAIComment();
         }
 
         function drawCategoryRankChart() {
@@ -1166,54 +1265,140 @@
             }
         }
 
-        function generateAIComment(totalRevenue, totalSalesCount, topItem, types, countries) {
+        function generateAIComment() {
             const commentContainer = document.getElementById('aiAnalysisComment');
-            if (!commentContainer || totalRevenue === 0) return;
+            if (!commentContainer) return;
 
-            const topType = Object.keys(types).sort((a, b) => types[b] - types[a])[0];
+            let aiTotalRevenue = 0;
+            let aiTotalSalesCount = 0;
+            const aiItemsRev = {};
+            const aiTypes = {};
+            const aiCountries = {};
+            const aiMonthlyTotal = {};
+
+            globalData.forEach(row => {
+                const dateStr = row["From (GMT+9:00)"];
+                if (!dateStr) return;
+                const month = dateStr.substring(0, 7); 
+                
+                if (!selectedMonths.has(month)) return;
+
+                // 12月と1月を除外
+                const mStr = month.slice(-2);
+                if (mStr === "12" || mStr === "01") return; 
+
+                const revenue = parseFloat(row["Revenue Share"]) || 0;
+                const count = parseInt(row["Sales Counts"]) || 0;
+                
+                // 日本語マスターデータ対応のタイトル取得
+                const id = row["Item ID"];
+                const title = id ? (masterDataMap[id] || row["Item Title"] || "不明") : (row["Item Title"] || "不明");
+                
+                const country = row["Country of Sale"] || "不明";
+                const type = row["Type"] || "不明";
+
+                aiTotalRevenue += revenue;
+                aiTotalSalesCount += count;
+                aiItemsRev[title] = (aiItemsRev[title] || 0) + revenue;
+                aiTypes[type] = (aiTypes[type] || 0) + revenue;
+                aiCountries[country] = (aiCountries[country] || 0) + revenue;
+                aiMonthlyTotal[month] = (aiMonthlyTotal[month] || 0) + revenue;
+            });
+
+            if (aiTotalRevenue === 0) {
+                commentContainer.innerHTML = `
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 text-gray-500 text-sm">
+                        <p>※選択された期間内に、あけおめ時期（12月・1月）以外のデータが存在しないため、通常期の分析レポートを生成できません。</p>
+                    </div>`;
+                return;
+            }
+
+            const aiTopItem = Object.keys(aiItemsRev).sort((a, b) => aiItemsRev[b] - aiItemsRev[a])[0];
+            const topType = Object.keys(aiTypes).sort((a, b) => aiTypes[b] - aiTypes[a])[0];
             const topTypeJa = topType === 'Sticker' ? 'スタンプ' : topType === 'Emoji' ? '絵文字' : topType === 'Theme' ? '着せかえ' : topType;
 
-            const topCountry = Object.keys(countries).sort((a, b) => countries[b] - countries[a])[0];
+            const topCountry = Object.keys(aiCountries).sort((a, b) => aiCountries[b] - aiCountries[a])[0];
             const countryNames = { 'JP': '日本', 'TW': '台湾', 'TH': 'タイ', 'ID': 'インドネシア' };
             const topCountryJa = countryNames[topCountry] || topCountry;
 
+            let topItemDependence = 0;
+            if (aiTopItem && aiItemsRev[aiTopItem] && aiTotalRevenue > 0) {
+                topItemDependence = (aiItemsRev[aiTopItem] / aiTotalRevenue) * 100;
+            }
+
+            let growthHtml = "";
+            const sortedMonths = Object.keys(aiMonthlyTotal).sort();
+            if (sortedMonths.length > 0) {
+                const latestMonth = sortedMonths[sortedMonths.length - 1];
+                const latestRev = aiMonthlyTotal[latestMonth] || 0;
+                
+                const [yyyy, mm] = latestMonth.split(/[.\-\/]/);
+                let prevDate = new Date(parseInt(yyyy), parseInt(mm) - 2, 1);
+                let prevYearStr = prevDate.getFullYear();
+                let prevMonthStr = String(prevDate.getMonth() + 1).padStart(2, '0');
+                const separator = latestMonth.charAt(4);
+                const prevMonth = `${prevYearStr}${separator}${prevMonthStr}`;
+
+                const prevRev = aiMonthlyTotal[prevMonth] || 0;
+
+                if (prevRev > 0) {
+                    const momPercent = ((latestRev - prevRev) / prevRev) * 100;
+                    if (momPercent >= 0) {
+                        growthHtml = `直近の有効月（${latestMonth}）は、前月比 <strong class="text-emerald-600">＋${momPercent.toFixed(1)}%</strong> と見事な成長を遂げています。`;
+                    } else {
+                        growthHtml = `直近の有効月（${latestMonth}）は、前月比 <strong class="text-red-500">${momPercent.toFixed(1)}%</strong> と一休みしています。`;
+                    }
+                } else if (latestRev > 0) {
+                    growthHtml = `直近の有効月（${latestMonth}）の売上は堅調に推移しています。`;
+                }
+            }
+
+            let countryAdviceHtml = "";
+            const overseasCountries = Object.keys(aiCountries).filter(c => c !== 'JP');
+            const topOverseasCountry = overseasCountries.sort((a, b) => aiCountries[b] - aiCountries[a])[0];
+            const topOverseasCountryJa = topOverseasCountry ? (countryNames[topOverseasCountry] || topOverseasCountry) : null;
+
+            if (topCountry === 'JP') {
+                if (topOverseasCountry && aiCountries[topOverseasCountry] > 0) {
+                    const overseasRatio = (aiCountries[topOverseasCountry] / aiTotalRevenue) * 100;
+                    const localizeHint = topOverseasCountry === 'TW' ? '「繁体字」への翻訳や少しオーバーなリアクション' : topOverseasCountry === 'TH' ? 'タイ語や現地の日常表現' : '現地の言語や文化';
+                    
+                    countryAdviceHtml = `<p>国内（日本市場）が全体のベース収益を力強く支えているため、次なる成長エンジンは「海外展開」にあります。特に注目すべきは海外トップの【<strong class="text-gray-900">${topOverseasCountryJa}市場（全体の${overseasRatio.toFixed(1)}%）</strong>】です。国内向けのエース作品をベースに、${localizeHint}を取り入れたローカライズ版を投下することで、少ない労力で効率よく新規ファンを開拓・拡大できるフェーズです。</p>`;
+                } else {
+                    countryAdviceHtml = `<p>現在、売上のほぼすべてが【<strong class="text-gray-900">日本市場（JP）</strong>】で構成されており、国内での盤石な土台ができています。次の一手として、文字に依存しない「動き・表情・ジェスチャー」メインのスタンプを投入し、台湾やタイなどの新規海外市場の反応を見るテストを行うのに最適な時期です。</p>`;
+                }
+            } else if (topCountry === 'TW') {
+                countryAdviceHtml = `<p>素晴らしいことに【<strong class="text-gray-900">台湾市場（TW）</strong>】での支持が最大の熱量を見せています！台湾ユーザーには「繁体字」を使った挨拶や、ちょっと大げさでユーモアのあるリアクションが非常に好まれます。台湾の日常的なトレンドを取り入れたリリースを組み込むと爆発的な効果が期待できます。</p>`;
+            } else {
+                countryAdviceHtml = `<p>現在【<strong class="text-gray-900">${topCountryJa}市場</strong>】が大きなシェアを占めています。文字を含まない「表情や動きだけで伝わるジェスチャー」や、現地の日常会話をリサーチして取り入れることで、グローバルな売上をさらに拡大させるポテンシャルを秘めています。</p>`;
+            }
+
             let html = `
-                <div class="p-4 bg-green-50 rounded-xl border border-green-100 text-gray-700 space-y-4">
-                    <div>
-                        <p class="font-bold text-[#00C300] text-base mb-1">📊 販売動向の総評</p>
-                        <p>選択された期間の総収益は <strong class="text-gray-900">¥${Math.floor(totalRevenue).toLocaleString()}</strong>（総販売数: <strong class="text-gray-900">${totalSalesCount.toLocaleString()} 件</strong>）を記録しています。</p>
+                <div class="p-4 bg-green-50 rounded-xl border border-green-100 text-gray-700 space-y-4 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-green-200 text-green-800 text-[10px] font-bold px-2 py-1 rounded-bl-lg opacity-80 shadow-sm">
+                        ※あけおめ時期(12月・1月)を除外した分析
+                    </div>
+                    <div class="pt-2">
+                        <p class="font-bold text-[#00C300] text-base mb-1">📊 通常期の販売動向</p>
+                        <p>あけおめ特需を除いた通常期間の総収益は <strong class="text-gray-900">¥${Math.floor(aiTotalRevenue).toLocaleString()}</strong>（総販売数: <strong class="text-gray-900">${aiTotalSalesCount.toLocaleString()} 件</strong>）です。${growthHtml}</p>
                     </div>
                     
                     <div>
                         <p class="font-bold text-[#00C300] text-base mb-1">💡 ヒット商品の傾向と分析</p>
-                        <p>現在、最も収益の柱となっている主力のカテゴリは【<strong class="text-gray-900">${topTypeJa}</strong>】です。特に「<strong class="text-gray-900">${topItem || '該当なし'}</strong>」が全体の売上を強力に牽引するエースアイテムとなっています。このアイテムのテーマや構成、使いやすさはユーザーのニーズを完璧に捉えているため、これに続くシリーズ作品を継続的にリリースすることで、確実な地盤補強が期待できます。</p>
+                        <p>通常期に最も収益の柱となっている主力のカテゴリは【<strong class="text-gray-900">${topTypeJa}</strong>】です。特に「<strong class="text-gray-900">${aiTopItem || '該当なし'}</strong>」が真のエースアイテムとして活躍しており、通常期売上の <strong class="text-gray-900">${topItemDependence.toFixed(1)}%</strong> を一人で稼ぎ出しています。季節イベントに依存しないこのアイテムの「ウケている要素（絵柄のトーンや言葉のチョイス）」を抽出し、年間通して売れる第二・第三の柱となるシリーズを展開していくことが当面の急務であり、大きなチャンスです。</p>
                     </div>
 
                     <div>
                         <p class="font-bold text-[#00C300] text-base mb-1">🌏 エリア・マーケティングへの提言</p>
-            `;
-
-            if (topCountry === 'JP') {
-                html += `<p>現在、最重要拠点である【<strong class="text-gray-900">日本市場（JP）</strong>】での売上が最も安定しています。日本国内の季節イベントやタイムリーなトレンドに寄り添った新作を仕掛けるのが必勝パターンです。</p>`;
-            } else if (topCountry === 'TW') {
-                html += `<p>素晴らしいことに【<strong class="text-gray-900">台湾市場（TW）</strong>】での支持が最大の熱量を見せています！現地のLINEカルチャーに刺さる言葉選びやリアクションが評価されている証拠です。台湾特有のシーズントレンド（現地の祝日や流行語）を取り入れたマーケティングをさらに強化すると強力です。</p>`;
-            } else {
-                html += `<p>現在【<strong class="text-gray-900">${topCountryJa}市場</strong>】が大きなシェアを占めています。現地の言語対応や日常会話表現を強化したローカライズ展開を進めることで、グローバルな売上をさらに爆発させるポテンシャルを秘めています。</p>`;
-            }
-
-            if (countries['TW'] && topCountry !== 'TW') {
-                html += `<p class="mt-2 text-sm text-gray-600 bg-white p-2 rounded-lg border border-gray-100">✨ <strong class="text-[#00C300]">海外展開の注目ポイント:</strong> 台湾（TW）市場でも確実な成果が確認されています。言葉の壁を越える分かりやすいデザインや繁体字でのバリエーション展開を意識することで、海外シェアを第二の収益の柱に引き上げるチャンスです。</p>`;
-            }
-
-            html += `
+                        ${countryAdviceHtml}
                     </div>
 
-                    <div class="pt-2">
-                        <p class="font-bold text-[#00C300] text-sm mb-1">🚀 次の一手としての推奨アクション</p>
+                    <div class="pt-2 border-t border-green-100">
+                        <p class="font-bold text-[#00C300] text-sm mb-1 mt-2">🚀 次の一手としての推奨アクション</p>
                         <ul class="list-disc list-inside space-y-1 pl-1 text-sm text-gray-600">
-                            <li>売上トップのコアアイテム「${topItem}」に続く、類似テーマや派生作品のスピード投入</li>
-                            <li>好調なカテゴリである【${topTypeJa}】の強みを活かした、別切り口のテスト開発</li>
-                            <li>「国別詳細ランキング」で浮き彫りになった上位地域の文化やトレンドに合わせたピンポイントな展開</li>
+                            <li>年間通して売れている「${aiTopItem}」の世界観を踏襲した、新作スピンオフの企画</li>
+                            <li>「指定月の売上ランキング」を確認し、春夏秋の各季節に売れていた傾向の再現</li>
+                            <li>【${topOverseasCountryJa || topCountryJa}市場】の文化やトレンドに合わせた、専用ローカライズ版のテスト開発</li>
                         </ul>
                     </div>
                 </div>
