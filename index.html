@@ -9,7 +9,6 @@
     <link rel="icon" type="image/png" href="favicon.png?v=2026">
     <link rel="apple-touch-icon" href="favicon.png?v=2026">
 
-    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-J0XVCEF17D"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -318,7 +317,6 @@
                 <div class="chart-container"><canvas id="categoryRankChart"></canvas></div>
             </div>
 
-            <!-- ★ 新規追加：月別 人気ランキング (スタンプ・絵文字・着せかえ) -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2">
                     <h2 class="text-sm md:text-base font-bold text-gray-700 flex items-center gap-1">
@@ -389,7 +387,26 @@
                 <div class="chart-container"><canvas id="itemTrackChart"></canvas></div>
             </div>
 
-            <!-- ★ 新規追加：指定月の売上総合ランキング -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                <div class="flex justify-between items-center border-b pb-2 mb-4">
+                    <h2 class="text-sm md:text-base font-bold text-gray-700">📜 特定アイテムの詳細売上履歴 (全期間 / 年別)</h2>
+                    <div class="flex items-center gap-3">
+                        <button
+                            onclick="downloadChart('itemDetailTrackChart', '特定アイテム年別売上_' + document.getElementById('itemTrackSelect').value + '_' + document.getElementById('itemDetailYearSelect').value)"
+                            class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition">
+                            📥 画像保存
+                        </button>
+                        <select id="itemDetailYearSelect"
+                            class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]">
+                            <option value="ALL">すべての年</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container" style="min-height: 300px; height: auto;"
+                    id="itemDetailTrackChartContainer">
+                    <canvas id="itemDetailTrackChart"></canvas>
+                </div>
+            </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
                     <h2 class="text-sm md:text-base font-bold text-gray-700">🗓️ 指定月の売上総合ランキング (Top 10) <span
@@ -657,7 +674,7 @@
         const categoryTrendCountrySelect = document.getElementById('categoryTrendCountrySelect');
 
         const monthlyRankMonthSelect = document.getElementById('monthlyRankMonthSelect');
-
+        const itemDetailYearSelect = document.getElementById('itemDetailYearSelect');
         let globalData = [];
         let availableMonths = [];
         let selectedMonths = new Set();
@@ -933,10 +950,12 @@
                 });
             });
         });
+
         monthlyCategorySelect.addEventListener('change', () => { renderDashboard(); });
         categoryRankSelect.addEventListener('change', () => { drawCategoryRankChart(); });
         countryItemRankSelect.addEventListener('change', () => { drawCountryItemRankChart(); });
-        itemTrackSelect.addEventListener('change', () => { drawItemTrackChart(); });
+        itemTrackSelect.addEventListener('change', () => { drawItemTrackChart(); updateItemDetailYears(); drawItemDetailTrackChart(); });
+        itemDetailYearSelect.addEventListener('change', () => { drawItemDetailTrackChart(); });
         targetMonthRankSelect.addEventListener('change', () => { drawTargetMonthRankChart(); });
         categoryTrendCountrySelect.addEventListener('change', () => { renderDashboard(); });
         monthlyRankMonthSelect.addEventListener('change', () => { drawMonthlyRankCharts(); });
@@ -1470,6 +1489,8 @@
             drawCategoryRankChart();
             drawCountryItemRankChart();
             drawItemTrackChart();
+            updateItemDetailYears();
+            drawItemDetailTrackChart();
             drawTargetMonthRankChart();
             drawMonthlyRankCharts();
 
@@ -1678,6 +1699,91 @@
             createChart('itemTrackChart', 'bar', sortedMonths, dataRev, '収益 (円)', color1, { layout: { padding: { top: 25 } }, scales: { y: { beginAtZero: true } } }, dataCount);
         }
 
+        function updateItemDetailYears() {
+            const targetItem = itemTrackSelect.value;
+            if (!targetItem) return;
+
+            const years = new Set();
+            globalData.forEach(row => {
+                const id = row["Item ID"];
+                const title = id ? (masterDataMap[id] || row["Item Title"] || "不明") : (row["Item Title"] || "不明");
+                if (title === targetItem) {
+                    const dateStr = row["From (GMT+9:00)"];
+                    if (dateStr) years.add(dateStr.substring(0, 4));
+                }
+            });
+
+            const sortedYears = Array.from(years).sort().reverse();
+            const currentVal = itemDetailYearSelect.value;
+
+            itemDetailYearSelect.innerHTML = '<option value="ALL">すべての年</option>';
+            sortedYears.forEach(y => {
+                const option = document.createElement('option');
+                option.value = y;
+                option.textContent = y + '年';
+                itemDetailYearSelect.appendChild(option);
+            });
+
+            if (currentVal === 'ALL' || sortedYears.includes(currentVal)) {
+                itemDetailYearSelect.value = currentVal;
+            } else {
+                itemDetailYearSelect.value = 'ALL';
+            }
+        }
+
+        function drawItemDetailTrackChart() {
+            const targetItem = itemTrackSelect.value;
+            const targetYear = itemDetailYearSelect.value;
+            if (!targetItem) return;
+
+            const monthlyRev = {};
+            const monthlyCount = {};
+            let itemType = 'Sticker';
+
+            globalData.forEach(row => {
+                const id = row["Item ID"];
+                const title = id ? (masterDataMap[id] || row["Item Title"] || "不明") : (row["Item Title"] || "不明");
+
+                if (title === targetItem) {
+                    const dateStr = row["From (GMT+9:00)"];
+                    if (!dateStr) return;
+                    const year = dateStr.substring(0, 4);
+                    const month = dateStr.substring(0, 7);
+
+                    if (targetYear !== 'ALL' && year !== targetYear) return;
+
+                    const revenue = parseFloat(row["Revenue Share"]) || 0;
+                    const count = parseInt(row["Sales Counts"]) || 0;
+
+                    monthlyRev[month] = (monthlyRev[month] || 0) + revenue;
+                    monthlyCount[month] = (monthlyCount[month] || 0) + count;
+                    itemType = row["Type"] || itemType;
+                }
+            });
+
+            const sortedMonths = Object.keys(monthlyRev).sort();
+
+            if (sortedMonths.length === 0) {
+                if (charts['itemDetailTrackChart']) charts['itemDetailTrackChart'].destroy();
+                return;
+            }
+
+            const container = document.getElementById('itemDetailTrackChartContainer');
+            const requiredHeight = Math.max(300, sortedMonths.length * 30 + 100);
+            container.style.height = requiredHeight + 'px';
+
+            const dataRev = sortedMonths.map(m => monthlyRev[m] || 0);
+            const dataCount = sortedMonths.map(m => monthlyCount[m] || 0);
+
+            const color1 = typeColors[itemType] || { bg: 'rgba(139, 92, 246, 0.7)', border: 'rgba(139, 92, 246, 1)' };
+
+            createChart('itemDetailTrackChart', 'bar', sortedMonths, dataRev, '収益 (円)', color1, {
+                indexAxis: 'y',
+                maintainAspectRatio: false,
+                layout: { padding: { right: 85 } }
+            }, dataCount);
+        }
+
         function drawTargetMonthRankChart() {
             const targetMonth = targetMonthRankSelect.value;
             if (!targetMonth || !globalItemRevByMonthAndTitle[targetMonth]) return;
@@ -1862,7 +1968,7 @@
 
                     countryAdviceHtml = `<p>国内（日本市場）が全体のベース収益を力強く支えているため、次なる成長エンジンは「海外展開」にあります。特に注目すべきは海外トップの【<strong class="text-gray-900">${topOverseasCountryJa}市場（全体の${overseasRatio.toFixed(1)}%）</strong>】です。国内向けのエース作品をベースに、${localizeHint}を取り入れたローカライズ版を投下することで、少ない労力で効率よく新規ファンを開拓・拡大できるフェーズです。</p>`;
                 } else {
-                    countryAdviceHtml = `<p>現在、売上のほぼすべてが【<strong class="text-gray-900">日本市場（JP）</strong>】で構成されており、国内での盤石な土台ができています。次の一手として、文字に依存しない「動き・表情・ジェスチャー」メイン of スタンプを投入し、台湾やタイなどの新規海外市場の反応を見るテストを行うのに最適な時期です。</p>`;
+                    countryAdviceHtml = `<p>現在、売上のほぼすべてが【<strong class="text-gray-900">日本市場（JP）</strong>】で構成されており、国内での盤石な土台ができています。次の一手として、文字に依存しない「動き・表情・ジェスチャー」メインのスタンプを投入し、台湾やタイなどの新規海外市場の反応を見るテストを行うのに最適な時期です。</p>`;
                 }
             } else if (topCountry === 'TW') {
                 countryAdviceHtml = `<p>素晴らしいことに【<strong class="text-gray-900">台湾市場（TW）</strong>】での支持が最大の熱量を見せています！台湾ユーザーには「繁体字」を使った挨拶や、ちょっと大げさでユーモアのあるリアクションが非常に好まれます。台湾の日常的なトレンドを取り入れたリリースを組み込むと爆発的な効果が期待できます。</p>`;
