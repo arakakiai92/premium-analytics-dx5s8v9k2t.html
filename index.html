@@ -214,26 +214,26 @@
 
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
-                    <h2 class="text-sm md:text-base font-bold text-gray-700">👑 全体収益ランキング (Top 10) <span
+                    <h2 class="text-sm md:text-base font-bold text-gray-700">👑 全体収益ランキング (Top 20) <span
                             class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
                     <button onclick="downloadChart('itemChart', '全体収益ランキング')"
                         class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition">
                         📥 画像保存
                     </button>
                 </div>
-                <div class="chart-container"><canvas id="itemChart"></canvas></div>
+                <div class="chart-container" style="height: 500px;"><canvas id="itemChart"></canvas></div>
             </div>
 
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
-                    <h2 class="text-sm md:text-base font-bold text-gray-700">🛍️ 全体販売数ランキング (Top 10) <span
+                    <h2 class="text-sm md:text-base font-bold text-gray-700">🛍️ 全体販売数ランキング (Top 20) <span
                             class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
                     <button onclick="downloadChart('salesCountChart', '全体販売数ランキング')"
                         class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition">
                         📥 画像保存
                     </button>
                 </div>
-                <div class="chart-container"><canvas id="salesCountChart"></canvas></div>
+                <div class="chart-container" style="height: 500px;"><canvas id="salesCountChart"></canvas></div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:col-span-2">
@@ -261,7 +261,7 @@
 
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
-                    <h2 class="text-sm md:text-base font-bold text-gray-700">📊 国別 売上ランキング (Top 10)</h2>
+                    <h2 class="text-sm md:text-base font-bold text-gray-700">📊 国別 売上ランキング</h2>
                     <button onclick="downloadChart('countryRankChart', '国別売上ランキング')"
                         class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition">
                         📥 画像保存
@@ -283,7 +283,7 @@
 
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
-                    <h2 class="text-sm md:text-base font-bold text-gray-700">🗺️ 国別詳細 アイテムランキング (Top 10) <span
+                    <h2 class="text-sm md:text-base font-bold text-gray-700">🗺️ 国別詳細 アイテムランキング (Top 20) <span
                             class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
                     <div class="flex items-center gap-3">
                         <button
@@ -296,12 +296,12 @@
                         </select>
                     </div>
                 </div>
-                <div class="chart-container"><canvas id="countryItemRankChart"></canvas></div>
+                <div class="chart-container" style="height: 500px;"><canvas id="countryItemRankChart"></canvas></div>
             </div>
 
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
-                    <h2 class="text-sm md:text-base font-bold text-gray-700">🏆 カテゴリ別 売上ランキング (Top 10) <span
+                    <h2 class="text-sm md:text-base font-bold text-gray-700">🏆 カテゴリ別 売上ランキング (Top 20) <span
                             class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
                     <div class="flex items-center gap-3">
                         <button
@@ -314,13 +314,13 @@
                         </select>
                     </div>
                 </div>
-                <div class="chart-container"><canvas id="categoryRankChart"></canvas></div>
+                <div class="chart-container" style="height: 500px;"><canvas id="categoryRankChart"></canvas></div>
             </div>
 
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2">
                     <h2 class="text-sm md:text-base font-bold text-gray-700 flex items-center gap-1">
-                        🏆 月別 人気ランキング (Top 10) <span
+                        🏆 月別 人気ランキング (Top 20) <span
                             class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span>
                     </h2>
                     <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -341,7 +341,8 @@
                                 📥 保存
                             </button>
                         </div>
-                        <div class="chart-container"><canvas id="monthlyStickerRankChart"></canvas></div>
+                        <div class="chart-container" style="height: 450px;"><canvas
+                                id="monthlyStickerRankChart"></canvas></div>
                     </div>
 
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
@@ -353,7 +354,8 @@
                                 📥 保存
                             </button>
                         </div>
-                        <div class="chart-container"><canvas id="monthlyEmojiRankChart"></canvas></div>
+                        <div class="chart-container" style="height: 450px;"><canvas id="monthlyEmojiRankChart"></canvas>
+                        </div>
                     </div>
 
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
@@ -365,7 +367,8 @@
                                 📥 保存
                             </button>
                         </div>
-                        <div class="chart-container"><canvas id="monthlyThemeRankChart"></canvas></div>
+                        <div class="chart-container" style="height: 450px;"><canvas id="monthlyThemeRankChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -517,7 +520,6 @@
             Rights Reserved.<a href="https://note.com/arakakiai_works" target="_blank">🗒️</a></p>
         <img src="bottom-right.png" alt="シーサーロゴ" class="h-9 w-auto object-contain block">
     </footer>
-
     <script>
         // 数字の表示/非表示トグル状態用のグローバル変数
         let numbersHidden = false;
@@ -1175,7 +1177,6 @@
                 }
             });
         }
-
         function renderDashboard() {
             let totalRevenue = 0;
             let totalSalesCount = 0;
@@ -1461,12 +1462,14 @@
                 }
             }
 
-            const sortedItemsRev = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]).slice(0, 10);
+            // ★Top 10 -> Top 20 に変更
+            const sortedItemsRev = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]).slice(0, 20);
             const itemRevBgColors = sortedItemsRev.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
             const itemRevBorderColors = sortedItemsRev.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
             createChart('itemChart', 'bar', sortedItemsRev, sortedItemsRev.map(i => itemsRev[i]), '収益 (円)', { bg: itemRevBgColors, border: itemRevBorderColors }, { indexAxis: 'y', layout: { padding: { right: 50 } } });
 
-            const sortedItemsCount = Object.keys(itemsCount).sort((a, b) => itemsCount[b] - itemsCount[a]).slice(0, 10);
+            // ★Top 10 -> Top 20 に変更
+            const sortedItemsCount = Object.keys(itemsCount).sort((a, b) => itemsCount[b] - itemsCount[a]).slice(0, 20);
             const itemCountBgColors = sortedItemsCount.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
             const itemCountBorderColors = sortedItemsCount.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
             createChart('salesCountChart', 'bar', sortedItemsCount, sortedItemsCount.map(i => itemsCount[i]), '販売数', { bg: itemCountBgColors, border: itemCountBorderColors }, { indexAxis: 'y', layout: { padding: { right: 40 } } });
@@ -1528,7 +1531,6 @@
             const dataJp = jpOvLabels.map(m => monthlyJpRev[m] || 0);
             const dataOverseas = jpOvLabels.map(m => monthlyOverseasRev[m] || 0);
 
-            // ★修正：日本vs海外グラフで数字（datalabels）が表示されるように修正
             const ctxJpOv = document.getElementById('jpVsOverseasChart').getContext('2d');
             if (charts['jpVsOverseasChart']) charts['jpVsOverseasChart'].destroy();
             charts['jpVsOverseasChart'] = new Chart(ctxJpOv, {
@@ -1658,7 +1660,8 @@
 
             const itemsRev = currentItemsRevByType[targetType];
             const itemsCount = currentItemsCountByType[targetType] || {};
-            const sortedItems = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]).slice(0, 10);
+            // ★Top 10 -> Top 20 に変更
+            const sortedItems = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]).slice(0, 20);
 
             const dataRev = sortedItems.map(i => itemsRev[i]);
             const dataCount = sortedItems.map(i => itemsCount[i] || 0);
@@ -1674,7 +1677,8 @@
 
             const itemsRev = currentItemsRevByCountry[targetCountry];
             const itemsCount = currentItemsCountByCountry[targetCountry] || {};
-            const sortedItems = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]).slice(0, 10);
+            // ★Top 10 -> Top 20 に変更
+            const sortedItems = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]).slice(0, 20);
 
             const dataRev = sortedItems.map(i => itemsRev[i]);
             const dataCount = sortedItems.map(i => itemsCount[i] || 0);
@@ -1827,7 +1831,8 @@
             const drawRankChart = (type, canvasId) => {
                 const items = typeRevs[type];
                 const counts = typeCounts[type];
-                const sortedItems = Object.keys(items).sort((a, b) => items[b] - items[a]).slice(0, 10);
+                // ★Top 10 -> Top 20 に変更
+                const sortedItems = Object.keys(items).sort((a, b) => items[b] - items[a]).slice(0, 20);
 
                 const dataValues = sortedItems.map(i => items[i]);
                 const dataCount = sortedItems.map(i => counts[i] || 0);
