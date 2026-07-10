@@ -526,10 +526,9 @@
 
         // データ格納用変数
         let masterDataMap = {}; // { "Item ID": "日本語タイトル" }
-        let masterDataUrls = {}; // { "Item ID": "ストアURL" } ★IDをキーにURLを保存するよう強化
+        let masterDataUrls = {}; // { "Item ID": "ストアURL" }
         let globalItemUrls = {}; // { "日本語タイトル": "販売URL" }
 
-        // Premium内訳用の詳細データ保持
         let globalItemDetailByMonthAndTitle = {};
 
         // 円グラフ用の引き出し線プラグイン
@@ -875,7 +874,6 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // 自動復元時にマスタデータ・URLデータも取得
                 const cachedMaster = await localforage.getItem('lineMasterData');
                 const cachedUrlsById = await localforage.getItem('lineMasterDataUrls');
                 const cachedUrls = await localforage.getItem('lineItemUrls');
@@ -917,16 +915,14 @@
                     skipEmptyLines: true,
                     complete: function (results) {
                         results.data.forEach(row => {
-                            // 様々なヘッダー名に対応できるよう柔軟に取得
                             const id = row['id'] || row['アイテムID'] || row['Item ID'];
                             const jpTitle = row['日本語作品タイトル'] || row['日本語タイトル'] || row['タイトル'] || row['Title'];
-                            // ★ストアURLを最優先で取得！
                             const url = row['ストアURL'] || row['Store URL'] || row['販売URL'] || row['URL'];
 
                             if (id) {
                                 if (jpTitle) masterDataMap[id] = jpTitle;
-                                if (url) masterDataUrls[id] = url; // IDベースでURLを強固に記憶
-                                if (jpTitle && url) globalItemUrls[jpTitle] = url; // 互換性のため
+                                if (url) masterDataUrls[id] = url;
+                                if (jpTitle && url) globalItemUrls[jpTitle] = url;
                                 count++;
                             }
                         });
@@ -1036,7 +1032,6 @@
                     const revenue = parseFloat(row["Revenue Share"]) || 0;
                     itemTotalRev[title] = (itemTotalRev[title] || 0) + revenue;
 
-                    // ★ マスタデータに紐づいた「ストアURL」があればそれを採用。なければフォールバックを生成。
                     let finalUrl = masterDataUrls[id] || row['ストアURL'];
 
                     if (!finalUrl && id) {
@@ -1230,6 +1225,7 @@
                 }
             });
         }
+
         function renderDashboard() {
             let totalRevenue = 0;
             let totalSalesCount = 0;
@@ -1238,6 +1234,11 @@
             const monthlyByType = {};
             const monthlyTotal = {};
             const allTypesFound = new Set();
+
+            // 新設：月別グラフ用（通常とPremiumを分離）
+            const monthlyNormalByType = {};
+            const monthlyPremiumByType = {};
+            const monthlyPremiumTotal = {};
 
             const itemsRev = {};
             const itemsCount = {};
@@ -1286,14 +1287,22 @@
                     country = country.trim();
                 }
 
-                if (country === 'JP') {
-                    monthlyJpRev[month] = (monthlyJpRev[month] || 0) + revenue;
-                } else if (isPremium) {
+                if (!monthlyNormalByType[month]) monthlyNormalByType[month] = {};
+                if (!monthlyPremiumByType[month]) monthlyPremiumByType[month] = {};
+
+                if (isPremium) {
+                    monthlyPremiumByType[month][type] = (monthlyPremiumByType[month][type] || 0) + revenue;
+                    monthlyPremiumTotal[month] = (monthlyPremiumTotal[month] || 0) + revenue;
                     monthlyPremiumRev[month] = (monthlyPremiumRev[month] || 0) + revenue;
                 } else {
-                    monthlyOverseasRev[month] = (monthlyOverseasRev[month] || 0) + revenue;
-                    if (!monthlyOverseasByType[month]) monthlyOverseasByType[month] = {};
-                    monthlyOverseasByType[month][type] = (monthlyOverseasByType[month][type] || 0) + revenue;
+                    monthlyNormalByType[month][type] = (monthlyNormalByType[month][type] || 0) + revenue;
+                    if (country === 'JP') {
+                        monthlyJpRev[month] = (monthlyJpRev[month] || 0) + revenue;
+                    } else {
+                        monthlyOverseasRev[month] = (monthlyOverseasRev[month] || 0) + revenue;
+                        if (!monthlyOverseasByType[month]) monthlyOverseasByType[month] = {};
+                        monthlyOverseasByType[month][type] = (monthlyOverseasByType[month][type] || 0) + revenue;
+                    }
                 }
 
                 globalItemTypes[title] = type;
@@ -1375,28 +1384,47 @@
             const typeList = Array.from(allTypesFound).sort();
             const targetMonthlyCat = monthlyCategorySelect.value || 'ALL';
 
+            // ★ 月別グラフの表示ロジック（Premiumを独立）
             let stackedDatasets = [];
 
             if (targetMonthlyCat === 'ALL') {
                 stackedDatasets = typeList.map(type => {
                     const color = typeColors[type] || defaultColor;
                     return {
-                        label: type === 'Sticker' ? 'スタンプ' : type === 'Emoji' ? '絵文字' : type === 'Theme' ? '着せかえ' : type,
-                        data: sortedMonths.map(m => monthlyByType[m][type] || 0),
+                        label: (type === 'Sticker' ? 'スタンプ' : type === 'Emoji' ? '絵文字' : type === 'Theme' ? '着せかえ' : type) + ' (通常)',
+                        data: sortedMonths.map(m => monthlyNormalByType[m]?.[type] || 0),
                         backgroundColor: color.bg,
                         borderColor: color.border,
                         borderWidth: 1
                     };
                 });
-            } else {
-                const color = typeColors[targetMonthlyCat] || defaultColor;
-                stackedDatasets = [{
-                    label: targetMonthlyCat === 'Sticker' ? 'スタンプ' : targetMonthlyCat === 'Emoji' ? '絵文字' : targetMonthlyCat === 'Theme' ? '着せかえ' : targetMonthlyCat,
-                    data: sortedMonths.map(m => monthlyByType[m][targetMonthlyCat] || 0),
-                    backgroundColor: color.bg,
-                    borderColor: color.border,
+                // 全カテゴリ表示時は、Premiumは「合算」して最上段に乗せる
+                stackedDatasets.push({
+                    label: 'Premium (定額制)',
+                    data: sortedMonths.map(m => monthlyPremiumTotal[m] || 0),
+                    backgroundColor: 'rgba(234, 179, 8, 0.8)', // 黄色ベース
+                    borderColor: 'rgba(234, 179, 8, 1)',
                     borderWidth: 1
-                }];
+                });
+            } else {
+                // 個別カテゴリが選択された場合は、そのカテゴリの「通常」と「Premium」の2軸にする
+                const color = typeColors[targetMonthlyCat] || defaultColor;
+                stackedDatasets = [
+                    {
+                        label: (targetMonthlyCat === 'Sticker' ? 'スタンプ' : targetMonthlyCat === 'Emoji' ? '絵文字' : targetMonthlyCat === 'Theme' ? '着せかえ' : targetMonthlyCat) + ' (通常)',
+                        data: sortedMonths.map(m => monthlyNormalByType[m]?.[targetMonthlyCat] || 0),
+                        backgroundColor: color.bg,
+                        borderColor: color.border,
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Premium (定額制)',
+                        data: sortedMonths.map(m => monthlyPremiumByType[m]?.[targetMonthlyCat] || 0),
+                        backgroundColor: 'rgba(234, 179, 8, 0.8)',
+                        borderColor: 'rgba(234, 179, 8, 1)',
+                        borderWidth: 1
+                    }
+                ];
             }
 
             const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
@@ -1415,8 +1443,8 @@
                         padding: { right: 80 }
                     },
                     scales: {
-                        x: { stacked: (targetMonthlyCat === 'ALL'), beginAtZero: true, ticks: { display: !numbersHidden } },
-                        y: { stacked: (targetMonthlyCat === 'ALL'), ticks: { display: true } }
+                        x: { stacked: true, beginAtZero: true, ticks: { display: !numbersHidden } },
+                        y: { stacked: true, ticks: { display: true } }
                     },
                     plugins: {
                         legend: { display: true, position: 'top' },
