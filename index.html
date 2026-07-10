@@ -164,6 +164,7 @@
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-[#00C300]">
                 <p class="text-xs text-gray-500 font-bold">総収益 (分配金総額)</p>
                 <p class="text-xl md:text-2xl font-black text-gray-800 mt-1" id="kpiRevenue">¥0</p>
+                <p class="text-[10px] text-green-600 font-bold mt-1 hidden" id="kpiPremiumRevenue">(うちPremium: ¥0)</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
                 <p class="text-xs text-gray-500 font-bold">期間中累計推定手取り</p>
@@ -521,12 +522,14 @@
         <img src="bottom-right.png" alt="シーサーロゴ" class="h-9 w-auto object-contain block">
     </footer>
     <script>
-        // 数字の表示/非表示トグル状態用のグローバル変数
         let numbersHidden = false;
 
         // データ格納用変数
-        let masterDataMap = {}; // { "Item ID": "日本語タイトル" }
-        let globalItemUrls = {}; // { "日本語タイトル": "販売URL" }
+        let masterDataMap = {};
+        let globalItemUrls = {};
+
+        // Premium内訳用の詳細データ保持
+        let globalItemDetailByMonthAndTitle = {};
 
         // 円グラフ用の引き出し線プラグイン
         const pieLabelsLinePlugin = {
@@ -548,7 +551,7 @@
                         if (!value || value === 0) return;
                         if (!element || typeof element.startAngle === 'undefined') return;
 
-                        if (value / total < 0.015) return; // 極小スライス非表示
+                        if (value / total < 0.015) return;
 
                         const midAngle = element.startAngle + (element.endAngle - element.startAngle) / 2;
                         const cos = Math.cos(midAngle);
@@ -698,7 +701,6 @@
         };
         const defaultColor = { bg: "rgba(156, 163, 175, 0.8)", border: "rgba(156, 163, 175, 1)" };
 
-        // 高画質保存＆シェア機能
         function downloadChart(canvasId, title) {
             const chart = charts[canvasId];
             if (!chart) return;
@@ -763,7 +765,6 @@
             document.body.removeChild(link);
         }
 
-        // 販売件数（countData）を併記できる拡張版グラフ作成機能
         function createChart(canvasId, type, labels, data, label, colors, extraOptions = {}, countData = null) {
             const ctx = document.getElementById(canvasId).getContext('2d');
             if (charts[canvasId]) charts[canvasId].destroy();
@@ -775,6 +776,7 @@
             if (isPie) pluginsToUse.push(pieLabelsLinePlugin);
 
             const isHorizontal = extraOptions.indexAxis === 'y';
+            const isPremiumTarget = (canvasId === 'countryItemRankChart' && document.getElementById('countryItemRankSelect')?.value === 'Premium(定額制)');
 
             const config = {
                 type: type,
@@ -828,6 +830,7 @@
                         }
                     },
                     plugins: {
+                        ...((extraOptions.plugins) || {}),
                         legend: {
                             display: isPie,
                             position: isPie ? 'bottom' : 'top',
@@ -843,10 +846,21 @@
                             align: 'end',
                             formatter: (value, context) => {
                                 if (value === 0) return '';
-                                let text = isSalesCount ? value.toLocaleString() + '件' : '¥' + Math.floor(value).toLocaleString();
-                                // ★販売件数の併記
+                                if (isSalesCount) return value.toLocaleString() + '件';
+
+                                let text = '¥' + Math.floor(value).toLocaleString();
+
+                                if (isPremiumTarget) {
+                                    return text + ' (Premium)';
+                                }
+
                                 if (countData && countData[context.dataIndex] !== undefined) {
-                                    text += ' / ' + countData[context.dataIndex].toLocaleString() + '件';
+                                    const countVal = countData[context.dataIndex];
+                                    if (countVal > 0) {
+                                        text += ' / ' + countVal.toLocaleString() + '件';
+                                    } else {
+                                        text += ' / Premium';
+                                    }
                                 }
                                 return text;
                             }
@@ -858,7 +872,6 @@
             charts[canvasId] = new Chart(ctx, config);
         }
 
-        // 画面起動時の自動キャッシュ復元処理
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const cachedMaster = await localforage.getItem('lineMasterData');
@@ -886,7 +899,6 @@
             }
         }
 
-        // マスターデータ読み込み
         masterFileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (!files || files.length === 0) return;
@@ -926,7 +938,6 @@
             });
         });
 
-        // 売上データ読み込み
         fileInput.addEventListener('change', (event) => {
             const files = event.target.files;
             if (files.length === 0) return;
@@ -939,16 +950,13 @@
                     header: true,
                     skipEmptyLines: true,
                     complete: function (results) {
-                        // 読み込んだ段階で、日本語や確定前のヘッダーをアプリが理解できる英語ヘッダーに変換する
                         const normalizedData = results.data.map(row => {
                             let date = row["From (GMT+9:00)"] || row["Date"] || row["日付"] || row["売上日"] || "";
-                            // スラッシュ区切り（2026/07）をハイフン（2026-07）に統一
                             date = date.replace(/\//g, '-');
 
                             let country = row["Country of Sale"] || row["Country"] || row["販売国"] || "JP";
                             let type = row["Type"] || row["タイプ"] || row["カテゴリ"] || "Sticker";
 
-                            // タイプの表記揺れを統一
                             if (type === 'スタンプ') type = 'Sticker';
                             if (type === '絵文字') type = 'Emoji';
                             if (type === '着せかえ' || type === '着せ替え') type = 'Theme';
@@ -1006,7 +1014,12 @@
                     years.add(dateStr.substring(0, 4));
                 }
                 if (row["Type"]) types.add(row["Type"]);
-                if (row["Country of Sale"]) countriesSet.add(row["Country of Sale"]);
+
+                let country = row["Country of Sale"] || "JP";
+                if (country.trim().toLowerCase() === "premium") {
+                    country = "Premium(定額制)";
+                }
+                if (country) countriesSet.add(country.trim());
 
                 if (row["Item ID"]) {
                     const id = row["Item ID"];
@@ -1207,6 +1220,7 @@
         function renderDashboard() {
             let totalRevenue = 0;
             let totalSalesCount = 0;
+            let totalPremiumRevenue = 0;
 
             const monthlyByType = {};
             const monthlyTotal = {};
@@ -1219,6 +1233,7 @@
 
             const monthlyJpRev = {};
             const monthlyOverseasRev = {};
+            const monthlyPremiumRev = {};
             const monthlyOverseasByType = {};
 
             currentItemsRevByType = {};
@@ -1229,6 +1244,7 @@
             globalItemCountByMonthAndTitle = {};
             globalItemTypes = {};
             globalMonthlyTotal = {};
+            globalItemDetailByMonthAndTitle = {};
 
             globalData.forEach(row => {
                 const dateStr = row["From (GMT+9:00)"];
@@ -1247,15 +1263,20 @@
 
                 let country = row["Country of Sale"] || "不明";
                 const type = row["Type"] || "不明";
+                let isPremium = false;
 
                 if (country.trim().toLowerCase() === "premium") {
                     country = "Premium(定額制)";
+                    isPremium = true;
+                    totalPremiumRevenue += revenue;
                 } else if (country.trim() !== "") {
                     country = country.trim();
                 }
 
                 if (country === 'JP') {
                     monthlyJpRev[month] = (monthlyJpRev[month] || 0) + revenue;
+                } else if (isPremium) {
+                    monthlyPremiumRev[month] = (monthlyPremiumRev[month] || 0) + revenue;
                 } else {
                     monthlyOverseasRev[month] = (monthlyOverseasRev[month] || 0) + revenue;
                     if (!monthlyOverseasByType[month]) monthlyOverseasByType[month] = {};
@@ -1290,6 +1311,16 @@
                 globalItemRevByMonthAndTitle[month][title] = (globalItemRevByMonthAndTitle[month][title] || 0) + revenue;
                 if (!globalItemCountByMonthAndTitle[month]) globalItemCountByMonthAndTitle[month] = {};
                 globalItemCountByMonthAndTitle[month][title] = (globalItemCountByMonthAndTitle[month][title] || 0) + count;
+
+                if (!globalItemDetailByMonthAndTitle[month]) globalItemDetailByMonthAndTitle[month] = {};
+                if (!globalItemDetailByMonthAndTitle[month][title]) {
+                    globalItemDetailByMonthAndTitle[month][title] = { normal: 0, premium: 0 };
+                }
+                if (isPremium) {
+                    globalItemDetailByMonthAndTitle[month][title].premium += revenue;
+                } else {
+                    globalItemDetailByMonthAndTitle[month][title].normal += revenue;
+                }
             });
 
             const totalRevFloor = Math.floor(totalRevenue);
@@ -1299,6 +1330,14 @@
             document.getElementById('kpiRevenue').textContent = `¥${totalRevFloor.toLocaleString()}`;
             document.getElementById('kpiNetRevenue').textContent = `¥${netRevenue.toLocaleString()}`;
             document.getElementById('kpiSalesCount').textContent = totalSalesCount.toLocaleString();
+
+            const premiumKpiLabel = document.getElementById('kpiPremiumRevenue');
+            if (totalPremiumRevenue > 0) {
+                premiumKpiLabel.textContent = `(うちPremium: ¥${Math.floor(totalPremiumRevenue).toLocaleString()})`;
+                premiumKpiLabel.classList.remove('hidden');
+            } else {
+                premiumKpiLabel.classList.add('hidden');
+            }
 
             const topItem = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a])[0];
             const kpiLink = document.getElementById('kpiTopItem');
@@ -1489,13 +1528,12 @@
                 }
             }
 
-            // ★Top 10 -> Top 20 に変更
             const sortedItemsRev = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]).slice(0, 20);
             const itemRevBgColors = sortedItemsRev.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
             const itemRevBorderColors = sortedItemsRev.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
-            createChart('itemChart', 'bar', sortedItemsRev, sortedItemsRev.map(i => itemsRev[i]), '収益 (円)', { bg: itemRevBgColors, border: itemRevBorderColors }, { indexAxis: 'y', layout: { padding: { right: 50 } } });
+            const itemRevCounts = sortedItemsRev.map(i => itemsCount[i] || 0);
+            createChart('itemChart', 'bar', sortedItemsRev, sortedItemsRev.map(i => itemsRev[i]), '収益 (円)', { bg: itemRevBgColors, border: itemRevBorderColors }, { indexAxis: 'y', layout: { padding: { right: 85 } } }, itemRevCounts);
 
-            // ★Top 10 -> Top 20 に変更
             const sortedItemsCount = Object.keys(itemsCount).sort((a, b) => itemsCount[b] - itemsCount[a]).slice(0, 20);
             const itemCountBgColors = sortedItemsCount.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
             const itemCountBorderColors = sortedItemsCount.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
@@ -1557,6 +1595,7 @@
             const jpOvLabels = Object.keys(monthlyTotal).sort();
             const dataJp = jpOvLabels.map(m => monthlyJpRev[m] || 0);
             const dataOverseas = jpOvLabels.map(m => monthlyOverseasRev[m] || 0);
+            const dataPremium = jpOvLabels.map(m => monthlyPremiumRev[m] || 0);
 
             const ctxJpOv = document.getElementById('jpVsOverseasChart').getContext('2d');
             if (charts['jpVsOverseasChart']) charts['jpVsOverseasChart'].destroy();
@@ -1566,7 +1605,8 @@
                     labels: jpOvLabels,
                     datasets: [
                         { label: '日本 (JP)', data: dataJp, backgroundColor: 'rgba(59, 130, 246, 0.8)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 },
-                        { label: '海外 (Overseas)', data: dataOverseas, backgroundColor: 'rgba(16, 185, 129, 0.8)', borderColor: 'rgba(16, 185, 129, 1)', borderWidth: 1 }
+                        { label: '海外 (Overseas)', data: dataOverseas, backgroundColor: 'rgba(16, 185, 129, 0.8)', borderColor: 'rgba(16, 185, 129, 1)', borderWidth: 1 },
+                        { label: 'Premium (定額制)', data: dataPremium, backgroundColor: 'rgba(234, 179, 8, 0.8)', borderColor: 'rgba(234, 179, 8, 1)', borderWidth: 1 }
                     ]
                 },
                 options: {
@@ -1654,7 +1694,8 @@
                 const month = dateStr.substring(0, 7);
                 if (!selectedMonths.has(month)) return;
 
-                const country = row["Country of Sale"] || "不明";
+                let country = row["Country of Sale"] || "不明";
+                if (country.trim().toLowerCase() === "premium") country = "Premium(定額制)";
                 if (targetTrendCountry !== 'ALL' && country !== targetTrendCountry) return;
 
                 const revenue = parseFloat(row["Revenue Share"]) || 0;
@@ -1687,7 +1728,6 @@
 
             const itemsRev = currentItemsRevByType[targetType];
             const itemsCount = currentItemsCountByType[targetType] || {};
-            // ★Top 10 -> Top 20 に変更
             const sortedItems = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]).slice(0, 20);
 
             const dataRev = sortedItems.map(i => itemsRev[i]);
@@ -1704,7 +1744,6 @@
 
             const itemsRev = currentItemsRevByCountry[targetCountry];
             const itemsCount = currentItemsCountByCountry[targetCountry] || {};
-            // ★Top 10 -> Top 20 に変更
             const sortedItems = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]).slice(0, 20);
 
             const dataRev = sortedItems.map(i => itemsRev[i]);
@@ -1727,7 +1766,30 @@
             const itemType = globalItemTypes[targetItem];
             const color1 = typeColors[itemType] || { bg: 'rgba(139, 92, 246, 0.7)', border: 'rgba(139, 92, 246, 1)' };
 
-            createChart('itemTrackChart', 'bar', sortedMonths, dataRev, '収益 (円)', color1, { layout: { padding: { top: 25 } }, scales: { y: { beginAtZero: true } } }, dataCount);
+            const extraTrackOptions = {
+                layout: { padding: { top: 25 } },
+                scales: { y: { beginAtZero: true } },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const month = context.label;
+                                const title = itemTrackSelect.value;
+                                const val = context.raw;
+                                let basicLabel = '総収益: ¥' + Math.floor(val).toLocaleString();
+
+                                if (globalItemDetailByMonthAndTitle[month] && globalItemDetailByMonthAndTitle[month][title]) {
+                                    const details = globalItemDetailByMonthAndTitle[month][title];
+                                    basicLabel += ` (通常: ¥${Math.floor(details.normal).toLocaleString()} / Premium: ¥${Math.floor(details.premium).toLocaleString()})`;
+                                }
+                                return basicLabel;
+                            }
+                        }
+                    }
+                }
+            };
+
+            createChart('itemTrackChart', 'bar', sortedMonths, dataRev, '収益 (円)', color1, extraTrackOptions, dataCount);
         }
 
         function updateItemDetailYears() {
@@ -1858,7 +1920,6 @@
             const drawRankChart = (type, canvasId) => {
                 const items = typeRevs[type];
                 const counts = typeCounts[type];
-                // ★Top 10 -> Top 20 に変更
                 const sortedItems = Object.keys(items).sort((a, b) => items[b] - items[a]).slice(0, 20);
 
                 const dataValues = sortedItems.map(i => items[i]);
@@ -1908,6 +1969,9 @@
 
             let aiTotalRevenue = 0;
             let aiTotalSalesCount = 0;
+            let aiTotalPremiumRevenue = 0;
+            const aiPremiumItemsRev = {};
+
             const aiItemsRev = {};
             const aiTypes = {};
             const aiCountries = {};
@@ -1929,14 +1993,27 @@
                 const id = row["Item ID"];
                 const title = id ? (masterDataMap[id] || row["Item Title"] || "不明") : (row["Item Title"] || "不明");
 
-                const country = row["Country of Sale"] || "不明";
+                let country = row["Country of Sale"] || "不明";
                 const type = row["Type"] || "不明";
+                let isPremium = false;
+
+                if (country.trim().toLowerCase() === "premium") {
+                    country = "Premium(定額制)";
+                    isPremium = true;
+                    aiTotalPremiumRevenue += revenue;
+                    aiPremiumItemsRev[title] = (aiPremiumItemsRev[title] || 0) + revenue;
+                } else {
+                    country = country.trim();
+                }
 
                 aiTotalRevenue += revenue;
                 aiTotalSalesCount += count;
                 aiItemsRev[title] = (aiItemsRev[title] || 0) + revenue;
                 aiTypes[type] = (aiTypes[type] || 0) + revenue;
-                aiCountries[country] = (aiCountries[country] || 0) + revenue;
+
+                if (!isPremium) {
+                    aiCountries[country] = (aiCountries[country] || 0) + revenue;
+                }
                 aiMonthlyTotal[month] = (aiMonthlyTotal[month] || 0) + revenue;
             });
 
@@ -2008,6 +2085,19 @@
                 countryAdviceHtml = `<p>現在【<strong class="text-gray-900">${topCountryJa}市場</strong>】が大きなシェアを占めています。文字を含まない「表情や動きだけで伝わるジェスチャー」や、現地の日常会話をリサーチして取り入れることで、グローバルな売上をさらに拡大させるポテンシャルを秘めています。</p>`;
             }
 
+            let premiumAdviceHtml = "";
+            if (aiTotalRevenue > 0) {
+                const premiumRatio = (aiTotalPremiumRevenue / aiTotalRevenue) * 100;
+                if (premiumRatio >= 2.0) {
+                    const topPremiumItem = Object.keys(aiPremiumItemsRev).sort((a, b) => aiPremiumItemsRev[b] - aiPremiumItemsRev[a])[0] || "該当アイテム";
+                    premiumAdviceHtml = `
+                    <div class="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200 text-xs">
+                        <p class="font-bold text-yellow-700 text-sm mb-1">🎯 Premium (定額制) 成長自動検知レポート</p>
+                        <p>現在、総収益の <strong class="text-gray-950">${premiumRatio.toFixed(1)}%</strong> がPremium分配金から発生しており、収益の安定基盤として育ち始めています。定額制ユーザーは「日常的で使い勝手がよく、何度も送りたくなる表現」を多用する傾向があります。特にPremiumで最も好調な『<strong class="text-gray-950">${topPremiumItem}</strong>』のトーンや絵柄の要素をスピンオフや新作に横展開することで、定額制ユーザー内での利用頻度をさらに高め、分配金のベースを大きく押し上げることが可能です。</p>
+                    </div>`;
+                }
+            }
+
             let html = `
                 <div class="p-4 bg-green-50 rounded-xl border border-green-100 text-gray-700 space-y-4 relative overflow-hidden">
                     <div class="absolute top-0 right-0 bg-green-200 text-green-800 text-[10px] font-bold px-2 py-1 rounded-bl-lg opacity-80 shadow-sm">
@@ -2027,6 +2117,8 @@
                         <p class="font-bold text-[#00C300] text-base mb-1">🌏 エリア・マーケティングへの提言</p>
                         ${countryAdviceHtml}
                     </div>
+
+                    ${premiumAdviceHtml}
 
                     <div class="pt-2 border-t border-green-100">
                         <p class="font-bold text-[#00C300] text-sm mb-1 mt-2">🚀 次の一手としての推奨アクション</p>
