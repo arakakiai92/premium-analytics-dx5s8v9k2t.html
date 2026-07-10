@@ -525,8 +525,9 @@
         let numbersHidden = false;
 
         // データ格納用変数
-        let masterDataMap = {};
-        let globalItemUrls = {};
+        let masterDataMap = {}; // { "Item ID": "日本語タイトル" }
+        let masterDataUrls = {}; // { "Item ID": "ストアURL" } ★IDをキーにURLを保存するよう強化
+        let globalItemUrls = {}; // { "日本語タイトル": "販売URL" }
 
         // Premium内訳用の詳細データ保持
         let globalItemDetailByMonthAndTitle = {};
@@ -874,9 +875,13 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
+                // 自動復元時にマスタデータ・URLデータも取得
                 const cachedMaster = await localforage.getItem('lineMasterData');
+                const cachedUrlsById = await localforage.getItem('lineMasterDataUrls');
                 const cachedUrls = await localforage.getItem('lineItemUrls');
+
                 if (cachedMaster) masterDataMap = cachedMaster;
+                if (cachedUrlsById) masterDataUrls = cachedUrlsById;
                 if (cachedUrls) globalItemUrls = cachedUrls;
 
                 const cachedData = await localforage.getItem('lineSalesData');
@@ -912,20 +917,23 @@
                     skipEmptyLines: true,
                     complete: function (results) {
                         results.data.forEach(row => {
-                            const id = row['id'] || row['Item ID'];
-                            const jpTitle = row['日本語作品タイトル'] || row['日本語タイトル'];
-                            const url = row['販売URL'] || row['URL'];
-                            if (id && jpTitle) {
-                                masterDataMap[id] = jpTitle;
-                                if (url) {
-                                    globalItemUrls[jpTitle] = url;
-                                }
+                            // 様々なヘッダー名に対応できるよう柔軟に取得
+                            const id = row['id'] || row['アイテムID'] || row['Item ID'];
+                            const jpTitle = row['日本語作品タイトル'] || row['日本語タイトル'] || row['タイトル'] || row['Title'];
+                            // ★ストアURLを最優先で取得！
+                            const url = row['ストアURL'] || row['Store URL'] || row['販売URL'] || row['URL'];
+
+                            if (id) {
+                                if (jpTitle) masterDataMap[id] = jpTitle;
+                                if (url) masterDataUrls[id] = url; // IDベースでURLを強固に記憶
+                                if (jpTitle && url) globalItemUrls[jpTitle] = url; // 互換性のため
                                 count++;
                             }
                         });
                         filesRead++;
                         if (filesRead === files.length) {
                             localforage.setItem('lineMasterData', masterDataMap);
+                            localforage.setItem('lineMasterDataUrls', masterDataUrls);
                             localforage.setItem('lineItemUrls', globalItemUrls);
                             alert(`${count}件のマスターデータを読み込みました！グラフを日本語表記に更新します。`);
                             if (globalData.length > 0) {
@@ -1028,13 +1036,18 @@
                     const revenue = parseFloat(row["Revenue Share"]) || 0;
                     itemTotalRev[title] = (itemTotalRev[title] || 0) + revenue;
 
-                    if (!globalItemUrls[title] && id) {
-                        let fallbackUrl = '';
-                        if (type === 'Sticker') fallbackUrl = `https://store.line.me/stickershop/product/${id}/ja`;
-                        else if (type === 'Emoji') fallbackUrl = `https://store.line.me/emojishop/product/${id}/ja`;
-                        else if (type === 'Theme') fallbackUrl = `https://store.line.me/themeshop/product/${id}/ja`;
-                        else fallbackUrl = `https://store.line.me/search/ja?q=${id}`;
-                        globalItemUrls[title] = fallbackUrl;
+                    // ★ マスタデータに紐づいた「ストアURL」があればそれを採用。なければフォールバックを生成。
+                    let finalUrl = masterDataUrls[id] || row['ストアURL'];
+
+                    if (!finalUrl && id) {
+                        if (type === 'Sticker') finalUrl = `https://store.line.me/stickershop/product/${id}/ja`;
+                        else if (type === 'Emoji') finalUrl = `https://store.line.me/emojishop/product/${id}/ja`;
+                        else if (type === 'Theme') finalUrl = `https://store.line.me/themeshop/product/${id}/ja`;
+                        else finalUrl = `https://store.line.me/search/ja?q=${id}`;
+                    }
+
+                    if (finalUrl) {
+                        globalItemUrls[title] = finalUrl;
                     }
                 }
             });
