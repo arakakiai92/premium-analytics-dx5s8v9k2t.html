@@ -12,7 +12,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-J0XVCEF17D"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
+        function gtag() {dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', 'G-J0XVCEF17D');
     </script>
@@ -501,15 +501,15 @@
                 </div>
             </div>
 
-            <!-- ▼▼▼ ここから追加: Premium分析セクション ▼▼▼ -->
+            <!-- ▼▼▼ Premium分析セクション ▼▼▼ -->
             <div class="bg-yellow-50 p-4 md:p-6 rounded-xl shadow-sm border border-yellow-200 lg:col-span-2 space-y-4">
                 <h2
                     class="text-sm md:text-base font-bold text-yellow-800 border-b border-yellow-200 pb-2 flex items-center gap-2">
                     🌟 Premium (定額制) 詳細分析
                 </h2>
 
+                <!-- 累計分析 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- ① プレミアム収益依存度チャート -->
                     <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
                         <div class="flex justify-between items-center border-b pb-2 mb-4">
                             <h3 class="text-xs md:text-sm font-bold text-gray-700">🍩 収益依存度 (通常 vs Premium)</h3>
@@ -521,10 +521,9 @@
                         </div>
                     </div>
 
-                    <!-- ② カテゴリ別プレミアム相性 -->
                     <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
                         <div class="flex justify-between items-center border-b pb-2 mb-4">
-                            <h3 class="text-xs md:text-sm font-bold text-gray-700">🎨 カテゴリ別 比率 (Premium内)</h3>
+                            <h3 class="text-xs md:text-sm font-bold text-gray-700">🎨 カテゴリ別 比率 (Premium累計)</h3>
                             <button onclick="downloadChart('premiumCategoryChart', 'Premiumカテゴリ比率')"
                                 class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition">📥
                                 保存</button>
@@ -535,7 +534,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- ③ プレミアム収益推移 -->
                     <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
                         <div class="flex justify-between items-center border-b pb-2 mb-4">
                             <h3 class="text-xs md:text-sm font-bold text-gray-700">📈 月別 Premium分配金推移</h3>
@@ -547,10 +545,9 @@
                         </div>
                     </div>
 
-                    <!-- ④ 実利用度（アクティブ）ランキング -->
                     <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
                         <div class="flex justify-between items-center border-b pb-2 mb-4">
-                            <h3 class="text-xs md:text-sm font-bold text-gray-700">👑 実利用度ランキング (Top 20)</h3>
+                            <h3 class="text-xs md:text-sm font-bold text-gray-700">👑 実利用度ランキング (Premium累計 Top 20)</h3>
                             <button onclick="downloadChart('premiumItemRankChart', 'Premium実利用度ランキング')"
                                 class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition">📥
                                 保存</button>
@@ -559,8 +556,51 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ▼▼ 新設：指定月ごとの詳細分析 ▼▼ -->
+                <div class="mt-8 border-t border-yellow-200 pt-6">
+                    <div
+                        class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-yellow-200 pb-2 mb-4 gap-2">
+                        <h3 class="text-sm md:text-base font-bold text-yellow-800 flex items-center gap-1">
+                            📅 指定月 Premium 詳細分析
+                        </h3>
+                        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                            <span class="text-xs font-bold text-gray-500 whitespace-nowrap">表示月:</span>
+                            <select id="premiumTargetMonthSelect"
+                                class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-yellow-500 focus:border-yellow-500">
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                            <div class="flex justify-between items-center border-b pb-2 mb-4">
+                                <h4 class="text-xs md:text-sm font-bold text-gray-700">🎨 指定月 カテゴリ比率 (Premium)</h4>
+                                <button
+                                    onclick="downloadChart('premiumTargetCategoryChart', '指定月Premiumカテゴリ比率_' + document.getElementById('premiumTargetMonthSelect').value)"
+                                    class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition">📥
+                                    保存</button>
+                            </div>
+                            <div class="chart-container" style="height: 250px;"><canvas
+                                    id="premiumTargetCategoryChart"></canvas></div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                            <div class="flex justify-between items-center border-b pb-2 mb-4">
+                                <h4 class="text-xs md:text-sm font-bold text-gray-700">👑 指定月 実利用度ランキング (Top 10)</h4>
+                                <button
+                                    onclick="downloadChart('premiumTargetItemRankChart', '指定月Premium実利用度ランキング_' + document.getElementById('premiumTargetMonthSelect').value)"
+                                    class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition">📥
+                                    保存</button>
+                            </div>
+                            <div class="chart-container" style="height: 250px;"><canvas
+                                    id="premiumTargetItemRankChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- ▲▲ 新設ブロックおわり ▲▲ -->
             </div>
-            <!-- ▲▲▲ ここまで追加 ▲▲▲ -->
+            <!-- ▲▲▲ Premium分析セクションおわり ▲▲▲ -->
 
             <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
                 <h2 class="text-sm md:text-base font-bold mb-4 text-gray-700 border-b pb-2 flex items-center gap-2">
@@ -591,12 +631,13 @@
         let globalItemUrls = {}; // { "日本語タイトル": "販売URL" }
 
         let globalItemDetailByMonthAndTitle = {};
+        let globalMonthlyPremiumByType = {}; // 新設: 指定月Premiumカテゴリ用
 
         // 円グラフ用の引き出し線プラグイン
         const pieLabelsLinePlugin = {
             id: 'pieLabelsLine',
             afterDraw: (chart) => {
-                const { ctx, config } = chart;
+                const {ctx, config} = chart;
                 if (config.type !== 'pie' && config.type !== 'doughnut') return;
 
                 chart.data.datasets.forEach((dataset, datasetIdx) => {
@@ -678,7 +719,7 @@
             afterDatasetsDraw: (chart) => {
                 if (chart.canvas.id !== 'monthlyChart') return;
 
-                const { ctx, scales: { x }, data } = chart;
+                const {ctx, scales: {x}, data} = chart;
                 ctx.save();
 
                 if (numbersHidden) {
@@ -720,7 +761,7 @@
         const whiteBackgroundPlugin = {
             id: 'whiteBackground',
             beforeDraw: (chart) => {
-                const { ctx, width, height } = chart;
+                const {ctx, width, height} = chart;
                 ctx.save();
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, width, height);
@@ -735,6 +776,7 @@
         const countryItemRankSelect = document.getElementById('countryItemRankSelect');
         const itemTrackSelect = document.getElementById('itemTrackSelect');
         const targetMonthRankSelect = document.getElementById('targetMonthRankSelect');
+        const premiumTargetMonthSelect = document.getElementById('premiumTargetMonthSelect'); // 新設
         const targetRevenueInput = document.getElementById('targetRevenueInput');
         const currentRevenueInput = document.getElementById('currentRevenueInput');
         const categoryTrendCountrySelect = document.getElementById('categoryTrendCountrySelect');
@@ -756,11 +798,11 @@
         let globalMonthlyTotal = {};
 
         const typeColors = {
-            "Sticker": { bg: "rgba(236, 72, 153, 0.8)", border: "rgba(236, 72, 153, 1)" },
-            "Emoji": { bg: "rgba(139, 92, 246, 0.8)", border: "rgba(139, 92, 246, 1)" },
-            "Theme": { bg: "rgba(99, 102, 241, 0.8)", border: "rgba(99, 102, 241, 1)" }
+            "Sticker": {bg: "rgba(236, 72, 153, 0.8)", border: "rgba(236, 72, 153, 1)"},
+            "Emoji": {bg: "rgba(139, 92, 246, 0.8)", border: "rgba(139, 92, 246, 1)"},
+            "Theme": {bg: "rgba(99, 102, 241, 0.8)", border: "rgba(99, 102, 241, 1)"}
         };
-        const defaultColor = { bg: "rgba(156, 163, 175, 0.8)", border: "rgba(156, 163, 175, 1)" };
+        const defaultColor = {bg: "rgba(156, 163, 175, 0.8)", border: "rgba(156, 163, 175, 1)"};
 
         function downloadChart(canvasId, title) {
             const chart = charts[canvasId];
@@ -797,9 +839,9 @@
             newCanvas.toBlob(async (blob) => {
                 if (!blob) return;
 
-                const file = new File([blob], filename, { type: 'image/png' });
+                const file = new File([blob], filename, {type: 'image/png'});
 
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                if (navigator.canShare && navigator.canShare({files: [file]})) {
                     try {
                         await navigator.share({
                             files: [file],
@@ -837,7 +879,7 @@
             if (isPie) pluginsToUse.push(pieLabelsLinePlugin);
 
             const isHorizontal = extraOptions.indexAxis === 'y';
-            const isPremiumTarget = (canvasId === 'countryItemRankChart' && document.getElementById('countryItemRankSelect')?.value === 'Premium(定額制)');
+            const isPremiumTarget = (canvasId === 'countryItemRankChart' && document.getElementById('countryItemRankSelect')?.value === 'Premium(定額制)') || canvasId.includes('premium') || canvasId.includes('Premium');
 
             const config = {
                 type: type,
@@ -856,7 +898,7 @@
                     maintainAspectRatio: false,
                     radius: isPie ? '55%' : undefined,
                     layout: {
-                        padding: isPie ? { top: 20, bottom: 20, left: 20, right: 20 } : 0
+                        padding: isPie ? {top: 20, bottom: 20, left: 20, right: 20} : 0
                     },
                     ...extraOptions,
                     onClick: (event, elements, chart) => {
@@ -878,14 +920,14 @@
                         x: {
                             ticks: {
                                 display: isHorizontal ? !numbersHidden : true,
-                                font: { size: 10 }
+                                font: {size: 10}
                             },
                             ...((extraOptions.scales && extraOptions.scales.x) || {})
                         },
                         y: {
                             ticks: {
                                 display: isHorizontal ? true : !numbersHidden,
-                                font: { size: 10 }
+                                font: {size: 10}
                             },
                             ...((extraOptions.scales && extraOptions.scales.y) || {})
                         }
@@ -895,14 +937,14 @@
                         legend: {
                             display: isPie,
                             position: isPie ? 'bottom' : 'top',
-                            labels: { padding: 15, boxWidth: 12, font: { size: 11 } }
+                            labels: {padding: 15, boxWidth: 12, font: {size: 11}}
                         },
                         datalabels: {
                             display: !isPie,
                             color: numbersHidden ? 'transparent' : '#000000',
                             textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
                             textShadowBlur: numbersHidden ? 5 : 0,
-                            font: { weight: 'bold', size: 10 },
+                            font: {weight: 'bold', size: 10},
                             anchor: 'end',
                             align: 'end',
                             formatter: (value, context) => {
@@ -911,7 +953,7 @@
 
                                 let text = '¥' + Math.floor(value).toLocaleString();
 
-                                if (isPremiumTarget) {
+                                if (isPremiumTarget && canvasId !== 'premiumRatioChart') {
                                     return text + ' (Premium)';
                                 }
 
@@ -1053,14 +1095,15 @@
             });
         });
 
-        monthlyCategorySelect.addEventListener('change', () => { renderDashboard(); });
-        categoryRankSelect.addEventListener('change', () => { drawCategoryRankChart(); });
-        countryItemRankSelect.addEventListener('change', () => { drawCountryItemRankChart(); });
-        itemTrackSelect.addEventListener('change', () => { drawItemTrackChart(); updateItemDetailYears(); drawItemDetailTrackChart(); });
-        itemDetailYearSelect.addEventListener('change', () => { drawItemDetailTrackChart(); });
-        targetMonthRankSelect.addEventListener('change', () => { drawTargetMonthRankChart(); });
-        categoryTrendCountrySelect.addEventListener('change', () => { renderDashboard(); });
-        monthlyRankMonthSelect.addEventListener('change', () => { drawMonthlyRankCharts(); });
+        monthlyCategorySelect.addEventListener('change', () => {renderDashboard();});
+        categoryRankSelect.addEventListener('change', () => {drawCategoryRankChart();});
+        countryItemRankSelect.addEventListener('change', () => {drawCountryItemRankChart();});
+        itemTrackSelect.addEventListener('change', () => {drawItemTrackChart(); updateItemDetailYears(); drawItemDetailTrackChart();});
+        itemDetailYearSelect.addEventListener('change', () => {drawItemDetailTrackChart();});
+        targetMonthRankSelect.addEventListener('change', () => {drawTargetMonthRankChart();});
+        premiumTargetMonthSelect.addEventListener('change', () => {drawPremiumTargetMonthCharts();}); // 新設
+        categoryTrendCountrySelect.addEventListener('change', () => {renderDashboard();});
+        monthlyRankMonthSelect.addEventListener('change', () => {drawMonthlyRankCharts();});
 
         targetRevenueInput.addEventListener('input', updateTargetMeter);
         currentRevenueInput.addEventListener('input', updateTargetMeter);
@@ -1243,9 +1286,11 @@
                 itemTrackSelect.value = itemList[0];
             }
 
+            const sortedAvailableMonthsDesc = [...availableMonths].sort().reverse();
+
+            // 指定月の売上ランキング用
             const lastMonthRankSelected = targetMonthRankSelect.value;
             targetMonthRankSelect.innerHTML = '';
-            const sortedAvailableMonthsDesc = [...availableMonths].sort().reverse();
             sortedAvailableMonthsDesc.forEach(m => {
                 const option = document.createElement('option');
                 option.value = m;
@@ -1256,6 +1301,21 @@
                 targetMonthRankSelect.value = lastMonthRankSelected;
             } else if (sortedAvailableMonthsDesc.length > 0) {
                 targetMonthRankSelect.value = sortedAvailableMonthsDesc[0];
+            }
+
+            // 指定月のPremium売上詳細用
+            const lastPremMonthSelected = premiumTargetMonthSelect.value;
+            premiumTargetMonthSelect.innerHTML = '';
+            sortedAvailableMonthsDesc.forEach(m => {
+                const option = document.createElement('option');
+                option.value = m;
+                option.textContent = `${m} の詳細`;
+                premiumTargetMonthSelect.appendChild(option);
+            });
+            if (sortedAvailableMonthsDesc.includes(lastPremMonthSelected)) {
+                premiumTargetMonthSelect.value = lastPremMonthSelected;
+            } else if (sortedAvailableMonthsDesc.length > 0) {
+                premiumTargetMonthSelect.value = sortedAvailableMonthsDesc[0];
             }
 
             const lastMonthlyRankSelected = monthlyRankMonthSelect.value;
@@ -1296,15 +1356,12 @@
             const monthlyTotal = {};
             const allTypesFound = new Set();
 
-            // 新設：月別グラフ用（通常とPremiumを分離）
             const monthlyNormalByType = {};
             const monthlyPremiumByType = {};
             const monthlyPremiumTotal = {};
 
-            // ▼ Premium集計用変数
             const totalPremiumByType = {};
             const premiumItemsRev = {};
-            // ▲
 
             const itemsRev = {};
             const itemsCount = {};
@@ -1325,6 +1382,7 @@
             globalItemTypes = {};
             globalMonthlyTotal = {};
             globalItemDetailByMonthAndTitle = {};
+            globalMonthlyPremiumByType = {}; // 初期化
 
             globalData.forEach(row => {
                 const dateStr = row["From (GMT+9:00)"];
@@ -1355,16 +1413,16 @@
 
                 if (!monthlyNormalByType[month]) monthlyNormalByType[month] = {};
                 if (!monthlyPremiumByType[month]) monthlyPremiumByType[month] = {};
+                if (!globalMonthlyPremiumByType[month]) globalMonthlyPremiumByType[month] = {};
 
                 if (isPremium) {
                     monthlyPremiumByType[month][type] = (monthlyPremiumByType[month][type] || 0) + revenue;
                     monthlyPremiumTotal[month] = (monthlyPremiumTotal[month] || 0) + revenue;
                     monthlyPremiumRev[month] = (monthlyPremiumRev[month] || 0) + revenue;
+                    globalMonthlyPremiumByType[month][type] = (globalMonthlyPremiumByType[month][type] || 0) + revenue;
 
-                    // ▼ Premium個別集計
                     totalPremiumByType[type] = (totalPremiumByType[type] || 0) + revenue;
                     premiumItemsRev[title] = (premiumItemsRev[title] || 0) + revenue;
-                    // ▲
                 } else {
                     monthlyNormalByType[month][type] = (monthlyNormalByType[month][type] || 0) + revenue;
                     if (country === 'JP') {
@@ -1407,7 +1465,7 @@
 
                 if (!globalItemDetailByMonthAndTitle[month]) globalItemDetailByMonthAndTitle[month] = {};
                 if (!globalItemDetailByMonthAndTitle[month][title]) {
-                    globalItemDetailByMonthAndTitle[month][title] = { normal: 0, premium: 0 };
+                    globalItemDetailByMonthAndTitle[month][title] = {normal: 0, premium: 0};
                 }
                 if (isPremium) {
                     globalItemDetailByMonthAndTitle[month][title].premium += revenue;
@@ -1455,7 +1513,6 @@
             const typeList = Array.from(allTypesFound).sort();
             const targetMonthlyCat = monthlyCategorySelect.value || 'ALL';
 
-            // ★ 月別グラフの表示ロジック（Premiumを独立）
             let stackedDatasets = [];
 
             if (targetMonthlyCat === 'ALL') {
@@ -1469,16 +1526,14 @@
                         borderWidth: 1
                     };
                 });
-                // 全カテゴリ表示時は、Premiumは「合算」して最上段に乗せる
                 stackedDatasets.push({
                     label: 'Premium (定額制)',
                     data: sortedMonths.map(m => monthlyPremiumTotal[m] || 0),
-                    backgroundColor: 'rgba(234, 179, 8, 0.8)', // 黄色ベース
+                    backgroundColor: 'rgba(234, 179, 8, 0.8)',
                     borderColor: 'rgba(234, 179, 8, 1)',
                     borderWidth: 1
                 });
             } else {
-                // 個別カテゴリが選択された場合は、そのカテゴリの「通常」と「Premium」の2軸にする
                 const color = typeColors[targetMonthlyCat] || defaultColor;
                 stackedDatasets = [
                     {
@@ -1511,19 +1566,19 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     layout: {
-                        padding: { right: 80 }
+                        padding: {right: 80}
                     },
                     scales: {
-                        x: { stacked: true, beginAtZero: true, ticks: { display: !numbersHidden } },
-                        y: { stacked: true, ticks: { display: true } }
+                        x: {stacked: true, beginAtZero: true, ticks: {display: !numbersHidden}},
+                        y: {stacked: true, ticks: {display: true}}
                     },
                     plugins: {
-                        legend: { display: true, position: 'top' },
+                        legend: {display: true, position: 'top'},
                         datalabels: {
                             color: numbersHidden ? 'transparent' : '#000000',
                             textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
                             textShadowBlur: numbersHidden ? 5 : 0,
-                            font: { weight: 'bold', size: 10 },
+                            font: {weight: 'bold', size: 10},
                             anchor: 'center',
                             align: 'center',
                             formatter: (value) => {
@@ -1600,11 +1655,11 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             scales: {
-                                y: { beginAtZero: true, display: false },
-                                x: { display: true, grid: { display: false }, ticks: { font: { size: 10 } } }
+                                y: {beginAtZero: true, display: false},
+                                x: {display: true, grid: {display: false}, ticks: {font: {size: 10}}}
                             },
                             plugins: {
-                                legend: { display: false },
+                                legend: {display: false},
                                 datalabels: {
                                     color: numbersHidden ? 'transparent' : (context) => {
                                         const rate = momRates[context.dataIndex];
@@ -1620,7 +1675,7 @@
                                         return 'rgba(75, 85, 99, 0.6)';
                                     },
                                     textShadowBlur: numbersHidden ? 5 : 0,
-                                    font: { weight: 'bold', size: 10 },
+                                    font: {weight: 'bold', size: 10},
                                     anchor: 'end',
                                     align: 'top',
                                     formatter: (value, context) => {
@@ -1630,7 +1685,7 @@
                                     textAlign: 'center'
                                 }
                             },
-                            layout: { padding: { top: 35, right: 20, left: 20 } }
+                            layout: {padding: {top: 35, right: 20, left: 20}}
                         },
                         plugins: [whiteBackgroundPlugin]
                     });
@@ -1644,27 +1699,27 @@
             const itemRevBgColors = sortedItemsRev.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
             const itemRevBorderColors = sortedItemsRev.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
             const itemRevCounts = sortedItemsRev.map(i => itemsCount[i] || 0);
-            createChart('itemChart', 'bar', sortedItemsRev, sortedItemsRev.map(i => itemsRev[i]), '収益 (円)', { bg: itemRevBgColors, border: itemRevBorderColors }, { indexAxis: 'y', layout: { padding: { right: 85 } } }, itemRevCounts);
+            createChart('itemChart', 'bar', sortedItemsRev, sortedItemsRev.map(i => itemsRev[i]), '収益 (円)', {bg: itemRevBgColors, border: itemRevBorderColors}, {indexAxis: 'y', layout: {padding: {right: 85}}}, itemRevCounts);
 
             const sortedItemsCount = Object.keys(itemsCount).sort((a, b) => itemsCount[b] - itemsCount[a]).slice(0, 20);
             const itemCountBgColors = sortedItemsCount.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
             const itemCountBorderColors = sortedItemsCount.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
-            createChart('salesCountChart', 'bar', sortedItemsCount, sortedItemsCount.map(i => itemsCount[i]), '販売数', { bg: itemCountBgColors, border: itemCountBorderColors }, { indexAxis: 'y', layout: { padding: { right: 40 } } });
+            createChart('salesCountChart', 'bar', sortedItemsCount, sortedItemsCount.map(i => itemsCount[i]), '販売数', {bg: itemCountBgColors, border: itemCountBorderColors}, {indexAxis: 'y', layout: {padding: {right: 40}}});
 
             const countryLabels = Object.keys(countries).sort((a, b) => countries[b] - countries[a]);
-            createChart('countryChart', 'doughnut', countryLabels, countryLabels.map(c => countries[c]), '国別', { bg: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'], border: '#ffffff' });
+            createChart('countryChart', 'doughnut', countryLabels, countryLabels.map(c => countries[c]), '国別', {bg: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'], border: '#ffffff'});
 
             const typeLabels = Object.keys(types).sort((a, b) => types[b] - types[a]);
-            createChart('typeChart', 'pie', typeLabels, typeLabels.map(t => types[t]), '種類別', { bg: ['#8B5CF6', '#EC4899', '#6366F1'], border: '#ffffff' });
+            createChart('typeChart', 'pie', typeLabels, typeLabels.map(t => types[t]), '種類別', {bg: ['#8B5CF6', '#EC4899', '#6366F1'], border: '#ffffff'});
 
             const sortedCountries = Object.keys(countries).sort((a, b) => countries[b] - countries[a]).slice(0, 10);
-            createChart('countryRankChart', 'bar', sortedCountries, sortedCountries.map(c => countries[c]), '収益 (円)', { bg: 'rgba(59, 130, 246, 0.7)', border: 'rgba(59, 130, 246, 1)' }, { indexAxis: 'y', layout: { padding: { right: 50 } } });
+            createChart('countryRankChart', 'bar', sortedCountries, sortedCountries.map(c => countries[c]), '収益 (円)', {bg: 'rgba(59, 130, 246, 0.7)', border: 'rgba(59, 130, 246, 1)'}, {indexAxis: 'y', layout: {padding: {right: 50}}});
 
             const catLabels = Object.keys(types).sort((a, b) => types[b] - types[a]);
             const catValues = catLabels.map(t => types[t]);
             const catColors = catLabels.map(label => typeColors[label] ? typeColors[label].bg : 'rgba(59, 130, 246, 0.7)');
             const catBorders = catLabels.map(label => typeColors[label] ? typeColors[label].border : 'rgba(59, 130, 246, 1)');
-            createChart('categorySummaryChart', 'bar', catLabels, catValues, 'カテゴリ総売上', { bg: catColors, border: catBorders }, { indexAxis: 'y', layout: { padding: { right: 60 } } });
+            createChart('categorySummaryChart', 'bar', catLabels, catValues, 'カテゴリ総売上', {bg: catColors, border: catBorders}, {indexAxis: 'y', layout: {padding: {right: 60}}});
 
             drawCategoryRankChart();
             drawCountryItemRankChart();
@@ -1685,7 +1740,7 @@
                     const latestRev = globalItemRevByMonthAndTitle[latestMonth]?.[t] || 0;
                     const prevRev = globalItemRevByMonthAndTitle[prevMonth]?.[t] || 0;
                     if (latestRev > 0) {
-                        trends.push({ title: t, latestRev, diff: latestRev - prevRev });
+                        trends.push({title: t, latestRev, diff: latestRev - prevRev});
                     }
                 });
                 trends.sort((a, b) => b.diff - a.diff).slice(0, 5).forEach(item => {
@@ -1716,24 +1771,24 @@
                 data: {
                     labels: jpOvLabels,
                     datasets: [
-                        { label: '日本 (JP)', data: dataJp, backgroundColor: 'rgba(59, 130, 246, 0.8)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 },
-                        { label: '海外 (Overseas)', data: dataOverseas, backgroundColor: 'rgba(16, 185, 129, 0.8)', borderColor: 'rgba(16, 185, 129, 1)', borderWidth: 1 },
-                        { label: 'Premium (定額制)', data: dataPremium, backgroundColor: 'rgba(234, 179, 8, 0.8)', borderColor: 'rgba(234, 179, 8, 1)', borderWidth: 1 }
+                        {label: '日本 (JP)', data: dataJp, backgroundColor: 'rgba(59, 130, 246, 0.8)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1},
+                        {label: '海外 (Overseas)', data: dataOverseas, backgroundColor: 'rgba(16, 185, 129, 0.8)', borderColor: 'rgba(16, 185, 129, 1)', borderWidth: 1},
+                        {label: 'Premium (定額制)', data: dataPremium, backgroundColor: 'rgba(234, 179, 8, 0.8)', borderColor: 'rgba(234, 179, 8, 1)', borderWidth: 1}
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     scales: {
-                        x: { stacked: true, ticks: { display: true } },
-                        y: { stacked: true, beginAtZero: true, ticks: { display: !numbersHidden } }
+                        x: {stacked: true, ticks: {display: true}},
+                        y: {stacked: true, beginAtZero: true, ticks: {display: !numbersHidden}}
                     },
                     plugins: {
-                        legend: { display: true, position: 'top' },
+                        legend: {display: true, position: 'top'},
                         datalabels: {
                             color: numbersHidden ? 'transparent' : '#000000',
                             textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
                             textShadowBlur: numbersHidden ? 5 : 0,
-                            font: { weight: 'bold', size: 10 },
+                            font: {weight: 'bold', size: 10},
                             anchor: 'center',
                             align: 'center',
                             formatter: (value) => {
@@ -1778,13 +1833,13 @@
                     maintainAspectRatio: false,
                     radius: '65%',
                     plugins: {
-                        legend: { display: true, position: 'bottom' },
+                        legend: {display: true, position: 'bottom'},
                         datalabels: {
                             display: true,
                             color: numbersHidden ? 'transparent' : '#000000',
                             textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
                             textShadowBlur: numbersHidden ? 5 : 0,
-                            font: { weight: 'bold', size: 12 },
+                            font: {weight: 'bold', size: 12},
                             formatter: (value, context) => {
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
@@ -1822,16 +1877,14 @@
             const themeData = sortedMonthsTrendAll.map(m => (trendMonthlyByType[m] && trendMonthlyByType[m]['Theme']) ? trendMonthlyByType[m]['Theme'] : 0);
 
             const trendOptions = {
-                layout: { padding: { top: 20, right: 10 } },
-                scales: { y: { beginAtZero: true } },
-                plugins: { datalabels: { display: false } }
+                layout: {padding: {top: 20, right: 10}},
+                scales: {y: {beginAtZero: true}},
+                plugins: {datalabels: {display: false}}
             };
 
             createChart('stickerTrendChart', 'bar', sortedMonthsTrendAll, stickerData, '収益 (円)', typeColors['Sticker'] || defaultColor, trendOptions);
             createChart('emojiTrendChart', 'bar', sortedMonthsTrendAll, emojiData, '収益 (円)', typeColors['Emoji'] || defaultColor, trendOptions);
             createChart('themeTrendChart', 'bar', sortedMonthsTrendAll, themeData, '収益 (円)', typeColors['Theme'] || defaultColor, trendOptions);
-
-            // ▼▼▼ ここから追加: Premium分析グラフの描画 ▼▼▼
 
             // ① 収益依存度 (通常 vs Premium)
             const normalRev = totalRevenue - totalPremiumRevenue;
@@ -1839,10 +1892,10 @@
                 ['通常販売', 'Premium (定額制)'],
                 [normalRev, totalPremiumRevenue],
                 '収益 (円)',
-                { bg: ['rgba(59, 130, 246, 0.8)', 'rgba(234, 179, 8, 0.8)'], border: '#ffffff' }
+                {bg: ['rgba(59, 130, 246, 0.8)', 'rgba(234, 179, 8, 0.8)'], border: '#ffffff'}
             );
 
-            // ② カテゴリ別プレミアム相性
+            // ② カテゴリ別プレミアム相性 (累計)
             const premCats = Object.keys(totalPremiumByType).sort((a, b) => totalPremiumByType[b] - totalPremiumByType[a]);
             const premCatData = premCats.map(c => totalPremiumByType[c]);
             const premCatBg = premCats.map(c => typeColors[c] ? typeColors[c].bg : defaultColor.bg);
@@ -1851,22 +1904,21 @@
                 premCatLabels,
                 premCatData,
                 '収益 (円)',
-                { bg: premCatBg, border: '#ffffff' }
+                {bg: premCatBg, border: '#ffffff'}
             );
 
             // ③ 月別 Premium分配金推移
-            // （既存の trendMonthlyByType と統一感を持たせるため、全月をX軸にする）
             const sortedPremMonths = Object.keys(globalMonthlyTotal).sort();
             const premMonthData = sortedPremMonths.map(m => monthlyPremiumTotal[m] || 0);
             createChart('premiumTrendChart', 'bar',
                 sortedPremMonths,
                 premMonthData,
                 'Premium分配金 (円)',
-                { bg: 'rgba(234, 179, 8, 0.8)', border: 'rgba(234, 179, 8, 1)' },
-                { layout: { padding: { top: 20 } }, scales: { y: { beginAtZero: true } }, plugins: { datalabels: { display: false } } }
+                {bg: 'rgba(234, 179, 8, 0.8)', border: 'rgba(234, 179, 8, 1)'},
+                {layout: {padding: {top: 20}}, scales: {y: {beginAtZero: true}}, plugins: {datalabels: {display: false}}}
             );
 
-            // ④ 実利用度（アクティブ）ランキング
+            // ④ 実利用度ランキング (累計 Top 20)
             const sortedPremItems = Object.keys(premiumItemsRev).sort((a, b) => premiumItemsRev[b] - premiumItemsRev[a]).slice(0, 20);
             const premItemData = sortedPremItems.map(i => premiumItemsRev[i]);
             const premItemBg = sortedPremItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
@@ -1875,12 +1927,59 @@
                 sortedPremItems,
                 premItemData,
                 '収益 (円)',
-                { bg: premItemBg, border: premItemBorder },
-                { indexAxis: 'y', layout: { padding: { right: 85 } } }
+                {bg: premItemBg, border: premItemBorder},
+                {indexAxis: 'y', layout: {padding: {right: 85}}}
             );
-            // ▲▲▲ ここまで追加 ▲▲▲
+
+            drawPremiumTargetMonthCharts(); // 新設: 指定月のPremiumチャート描画
 
             generateAIComment();
+        }
+
+        // 新設: 指定月のPremiumチャートを描画する関数
+        function drawPremiumTargetMonthCharts() {
+            const targetMonth = premiumTargetMonthSelect.value;
+            if (!targetMonth) {
+                if (charts['premiumTargetCategoryChart']) charts['premiumTargetCategoryChart'].destroy();
+                if (charts['premiumTargetItemRankChart']) charts['premiumTargetItemRankChart'].destroy();
+                return;
+            }
+
+            // 1. 指定月 カテゴリ比率 (Premium)
+            const catData = globalMonthlyPremiumByType[targetMonth] || {};
+            const premCats = Object.keys(catData).sort((a, b) => catData[b] - catData[a]);
+            const premCatValues = premCats.map(c => catData[c]);
+            const premCatBg = premCats.map(c => typeColors[c] ? typeColors[c].bg : defaultColor.bg);
+            const premCatLabels = premCats.map(c => c === 'Sticker' ? 'スタンプ' : c === 'Emoji' ? '絵文字' : c === 'Theme' ? '着せかえ' : c);
+
+            createChart('premiumTargetCategoryChart', 'pie',
+                premCatLabels,
+                premCatValues,
+                '収益 (円)',
+                {bg: premCatBg, border: '#ffffff'}
+            );
+
+            // 2. 指定月 実利用度ランキング (Top 10)
+            const itemDataObj = globalItemDetailByMonthAndTitle[targetMonth] || {};
+            const premItemsRev = {};
+            Object.keys(itemDataObj).forEach(title => {
+                if (itemDataObj[title].premium > 0) {
+                    premItemsRev[title] = itemDataObj[title].premium;
+                }
+            });
+
+            const sortedItems = Object.keys(premItemsRev).sort((a, b) => premItemsRev[b] - premItemsRev[a]).slice(0, 10);
+            const dataValues = sortedItems.map(i => premItemsRev[i]);
+            const bgColors = sortedItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
+            const borderColors = sortedItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
+
+            createChart('premiumTargetItemRankChart', 'bar',
+                sortedItems,
+                dataValues,
+                '収益 (円)',
+                {bg: bgColors, border: borderColors},
+                {indexAxis: 'y', layout: {padding: {right: 85}}}
+            );
         }
 
         function drawCategoryRankChart() {
@@ -1894,9 +1993,9 @@
             const dataRev = sortedItems.map(i => itemsRev[i]);
             const dataCount = sortedItems.map(i => itemsCount[i] || 0);
 
-            const color1 = typeColors[targetType] || { bg: 'rgba(59, 130, 246, 0.7)', border: 'rgba(59, 130, 246, 1)' };
+            const color1 = typeColors[targetType] || {bg: 'rgba(59, 130, 246, 0.7)', border: 'rgba(59, 130, 246, 1)'};
 
-            createChart('categoryRankChart', 'bar', sortedItems, dataRev, '収益 (円)', color1, { indexAxis: 'y', layout: { padding: { right: 85 } } }, dataCount);
+            createChart('categoryRankChart', 'bar', sortedItems, dataRev, '収益 (円)', color1, {indexAxis: 'y', layout: {padding: {right: 85}}}, dataCount);
         }
 
         function drawCountryItemRankChart() {
@@ -1913,7 +2012,7 @@
             const bgColors1 = sortedItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
             const borderColors1 = sortedItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
 
-            createChart('countryItemRankChart', 'bar', sortedItems, dataRev, '収益 (円)', { bg: bgColors1, border: borderColors1 }, { indexAxis: 'y', layout: { padding: { right: 85 } } }, dataCount);
+            createChart('countryItemRankChart', 'bar', sortedItems, dataRev, '収益 (円)', {bg: bgColors1, border: borderColors1}, {indexAxis: 'y', layout: {padding: {right: 85}}}, dataCount);
         }
 
         function drawItemTrackChart() {
@@ -1925,11 +2024,11 @@
             const dataCount = sortedMonths.map(m => globalItemCountByMonthAndTitle[m]?.[targetItem] || 0);
 
             const itemType = globalItemTypes[targetItem];
-            const color1 = typeColors[itemType] || { bg: 'rgba(139, 92, 246, 0.7)', border: 'rgba(139, 92, 246, 1)' };
+            const color1 = typeColors[itemType] || {bg: 'rgba(139, 92, 246, 0.7)', border: 'rgba(139, 92, 246, 1)'};
 
             const extraTrackOptions = {
-                layout: { padding: { top: 25 } },
-                scales: { y: { beginAtZero: true } },
+                layout: {padding: {top: 25}},
+                scales: {y: {beginAtZero: true}},
                 plugins: {
                     tooltip: {
                         callbacks: {
@@ -2029,12 +2128,12 @@
             const dataRev = sortedMonths.map(m => monthlyRev[m] || 0);
             const dataCount = sortedMonths.map(m => monthlyCount[m] || 0);
 
-            const color1 = typeColors[itemType] || { bg: 'rgba(139, 92, 246, 0.7)', border: 'rgba(139, 92, 246, 1)' };
+            const color1 = typeColors[itemType] || {bg: 'rgba(139, 92, 246, 0.7)', border: 'rgba(139, 92, 246, 1)'};
 
             createChart('itemDetailTrackChart', 'bar', sortedMonths, dataRev, '収益 (円)', color1, {
                 indexAxis: 'y',
                 maintainAspectRatio: false,
-                layout: { padding: { right: 85 } }
+                layout: {padding: {right: 85}}
             }, dataCount);
         }
 
@@ -2052,7 +2151,7 @@
             const bgColors1 = sortedItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
             const borderColors1 = sortedItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
 
-            createChart('targetMonthRankChart', 'bar', sortedItems, dataRev, '収益 (円)', { bg: bgColors1, border: borderColors1 }, { indexAxis: 'y', layout: { padding: { right: 85 } } }, dataCount);
+            createChart('targetMonthRankChart', 'bar', sortedItems, dataRev, '収益 (円)', {bg: bgColors1, border: borderColors1}, {indexAxis: 'y', layout: {padding: {right: 85}}}, dataCount);
         }
 
         function drawMonthlyRankCharts() {
@@ -2067,8 +2166,8 @@
             const itemsRev = globalItemRevByMonthAndTitle[targetMonth];
             const itemsCount = globalItemCountByMonthAndTitle[targetMonth] || {};
 
-            const typeRevs = { 'Sticker': {}, 'Emoji': {}, 'Theme': {} };
-            const typeCounts = { 'Sticker': {}, 'Emoji': {}, 'Theme': {} };
+            const typeRevs = {'Sticker': {}, 'Emoji': {}, 'Theme': {}};
+            const typeCounts = {'Sticker': {}, 'Emoji': {}, 'Theme': {}};
 
             Object.keys(itemsRev).forEach(title => {
                 const type = globalItemTypes[title];
@@ -2088,7 +2187,7 @@
                 const color = typeColors[type] || defaultColor;
 
                 createChart(canvasId, 'bar', sortedItems, dataValues, '収益 (円)',
-                    color, { indexAxis: 'y', layout: { padding: { right: 85 } } }, dataCount);
+                    color, {indexAxis: 'y', layout: {padding: {right: 85}}}, dataCount);
             };
 
             drawRankChart('Sticker', 'monthlyStickerRankChart');
@@ -2191,7 +2290,7 @@
             const topTypeJa = topType === 'Sticker' ? 'スタンプ' : topType === 'Emoji' ? '絵文字' : topType === 'Theme' ? '着せかえ' : topType;
 
             const topCountry = Object.keys(aiCountries).sort((a, b) => aiCountries[b] - aiCountries[a])[0];
-            const countryNames = { 'JP': '日本', 'TW': '台湾', 'TH': 'タイ', 'ID': 'インドネシア' };
+            const countryNames = {'JP': '日本', 'TW': '台湾', 'TH': 'タイ', 'ID': 'インドネシア'};
             const topCountryJa = countryNames[topCountry] || topCountry;
 
             let topItemDependence = 0;
