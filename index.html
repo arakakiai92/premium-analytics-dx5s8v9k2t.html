@@ -501,6 +501,67 @@
                 </div>
             </div>
 
+            <!-- ▼▼▼ ここから追加: Premium分析セクション ▼▼▼ -->
+            <div class="bg-yellow-50 p-4 md:p-6 rounded-xl shadow-sm border border-yellow-200 lg:col-span-2 space-y-4">
+                <h2
+                    class="text-sm md:text-base font-bold text-yellow-800 border-b border-yellow-200 pb-2 flex items-center gap-2">
+                    🌟 Premium (定額制) 詳細分析
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- ① プレミアム収益依存度チャート -->
+                    <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h3 class="text-xs md:text-sm font-bold text-gray-700">🍩 収益依存度 (通常 vs Premium)</h3>
+                            <button onclick="downloadChart('premiumRatioChart', 'Premium収益依存度')"
+                                class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition">📥
+                                保存</button>
+                        </div>
+                        <div class="chart-container" style="height: 250px;"><canvas id="premiumRatioChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- ② カテゴリ別プレミアム相性 -->
+                    <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h3 class="text-xs md:text-sm font-bold text-gray-700">🎨 カテゴリ別 比率 (Premium内)</h3>
+                            <button onclick="downloadChart('premiumCategoryChart', 'Premiumカテゴリ比率')"
+                                class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition">📥
+                                保存</button>
+                        </div>
+                        <div class="chart-container" style="height: 250px;"><canvas id="premiumCategoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- ③ プレミアム収益推移 -->
+                    <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h3 class="text-xs md:text-sm font-bold text-gray-700">📈 月別 Premium分配金推移</h3>
+                            <button onclick="downloadChart('premiumTrendChart', 'Premium月別推移')"
+                                class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition">📥
+                                保存</button>
+                        </div>
+                        <div class="chart-container" style="height: 300px;"><canvas id="premiumTrendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- ④ 実利用度（アクティブ）ランキング -->
+                    <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h3 class="text-xs md:text-sm font-bold text-gray-700">👑 実利用度ランキング (Top 20)</h3>
+                            <button onclick="downloadChart('premiumItemRankChart', 'Premium実利用度ランキング')"
+                                class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition">📥
+                                保存</button>
+                        </div>
+                        <div class="chart-container" style="height: 300px;"><canvas id="premiumItemRankChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ▲▲▲ ここまで追加 ▲▲▲ -->
+
             <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
                 <h2 class="text-sm md:text-base font-bold mb-4 text-gray-700 border-b pb-2 flex items-center gap-2">
                     🤖 AI 売上簡易分析レポート
@@ -1240,6 +1301,11 @@
             const monthlyPremiumByType = {};
             const monthlyPremiumTotal = {};
 
+            // ▼ Premium集計用変数
+            const totalPremiumByType = {};
+            const premiumItemsRev = {};
+            // ▲
+
             const itemsRev = {};
             const itemsCount = {};
             const countries = {};
@@ -1294,6 +1360,11 @@
                     monthlyPremiumByType[month][type] = (monthlyPremiumByType[month][type] || 0) + revenue;
                     monthlyPremiumTotal[month] = (monthlyPremiumTotal[month] || 0) + revenue;
                     monthlyPremiumRev[month] = (monthlyPremiumRev[month] || 0) + revenue;
+
+                    // ▼ Premium個別集計
+                    totalPremiumByType[type] = (totalPremiumByType[type] || 0) + revenue;
+                    premiumItemsRev[title] = (premiumItemsRev[title] || 0) + revenue;
+                    // ▲
                 } else {
                     monthlyNormalByType[month][type] = (monthlyNormalByType[month][type] || 0) + revenue;
                     if (country === 'JP') {
@@ -1759,6 +1830,55 @@
             createChart('stickerTrendChart', 'bar', sortedMonthsTrendAll, stickerData, '収益 (円)', typeColors['Sticker'] || defaultColor, trendOptions);
             createChart('emojiTrendChart', 'bar', sortedMonthsTrendAll, emojiData, '収益 (円)', typeColors['Emoji'] || defaultColor, trendOptions);
             createChart('themeTrendChart', 'bar', sortedMonthsTrendAll, themeData, '収益 (円)', typeColors['Theme'] || defaultColor, trendOptions);
+
+            // ▼▼▼ ここから追加: Premium分析グラフの描画 ▼▼▼
+
+            // ① 収益依存度 (通常 vs Premium)
+            const normalRev = totalRevenue - totalPremiumRevenue;
+            createChart('premiumRatioChart', 'doughnut',
+                ['通常販売', 'Premium (定額制)'],
+                [normalRev, totalPremiumRevenue],
+                '収益 (円)',
+                { bg: ['rgba(59, 130, 246, 0.8)', 'rgba(234, 179, 8, 0.8)'], border: '#ffffff' }
+            );
+
+            // ② カテゴリ別プレミアム相性
+            const premCats = Object.keys(totalPremiumByType).sort((a, b) => totalPremiumByType[b] - totalPremiumByType[a]);
+            const premCatData = premCats.map(c => totalPremiumByType[c]);
+            const premCatBg = premCats.map(c => typeColors[c] ? typeColors[c].bg : defaultColor.bg);
+            const premCatLabels = premCats.map(c => c === 'Sticker' ? 'スタンプ' : c === 'Emoji' ? '絵文字' : c === 'Theme' ? '着せかえ' : c);
+            createChart('premiumCategoryChart', 'pie',
+                premCatLabels,
+                premCatData,
+                '収益 (円)',
+                { bg: premCatBg, border: '#ffffff' }
+            );
+
+            // ③ 月別 Premium分配金推移
+            // （既存の trendMonthlyByType と統一感を持たせるため、全月をX軸にする）
+            const sortedPremMonths = Object.keys(globalMonthlyTotal).sort();
+            const premMonthData = sortedPremMonths.map(m => monthlyPremiumTotal[m] || 0);
+            createChart('premiumTrendChart', 'bar',
+                sortedPremMonths,
+                premMonthData,
+                'Premium分配金 (円)',
+                { bg: 'rgba(234, 179, 8, 0.8)', border: 'rgba(234, 179, 8, 1)' },
+                { layout: { padding: { top: 20 } }, scales: { y: { beginAtZero: true } }, plugins: { datalabels: { display: false } } }
+            );
+
+            // ④ 実利用度（アクティブ）ランキング
+            const sortedPremItems = Object.keys(premiumItemsRev).sort((a, b) => premiumItemsRev[b] - premiumItemsRev[a]).slice(0, 20);
+            const premItemData = sortedPremItems.map(i => premiumItemsRev[i]);
+            const premItemBg = sortedPremItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
+            const premItemBorder = sortedPremItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
+            createChart('premiumItemRankChart', 'bar',
+                sortedPremItems,
+                premItemData,
+                '収益 (円)',
+                { bg: premItemBg, border: premItemBorder },
+                { indexAxis: 'y', layout: { padding: { right: 85 } } }
+            );
+            // ▲▲▲ ここまで追加 ▲▲▲
 
             generateAIComment();
         }
