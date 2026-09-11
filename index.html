@@ -241,7 +241,7 @@
                     </button>
                 </div>
                 <p class="text-xs text-gray-500 mb-2">※データが存在する月を「リリース月（経過月1）」として起算し、その後の売上推移を比較します。</p>
-                <div class="chart-container" style="height: 350px;"><canvas id="lifecycleChart"></canvas></div>
+                <div class="chart-container" style="height: 450px;"><canvas id="lifecycleChart"></canvas></div>
             </div>
 
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
@@ -1958,9 +1958,15 @@
                 data: {labels: lcLabels, datasets: lcDatasets},
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    scales: {y: {beginAtZero: true, ticks: {display: !numbersHidden}}},
+                    scales: {
+                        y: {beginAtZero: true, ticks: {display: !numbersHidden}},
+                        x: {ticks: {font: {size: 10}}}
+                    },
                     plugins: {
-                        legend: {position: 'right', labels: {boxWidth: 10, font: {size: 10}}},
+                        legend: {
+                            position: window.innerWidth < 768 ? 'bottom' : 'right',
+                            labels: {boxWidth: 10, font: {size: 10}}
+                        },
                         datalabels: {display: false}
                     }
                 },
