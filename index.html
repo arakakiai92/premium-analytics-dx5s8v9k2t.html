@@ -624,6 +624,7 @@
     </footer>
     <script>
         let numbersHidden = false;
+        let isExpandedView = false; // 新設: 全体表示(false) / スクロール拡大表示(true)
 
         // データ格納用変数
         let masterDataMap = {}; // { "Item ID": "日本語タイトル" }
@@ -631,7 +632,7 @@
         let globalItemUrls = {}; // { "日本語タイトル": "販売URL" }
 
         let globalItemDetailByMonthAndTitle = {};
-        let globalMonthlyPremiumByType = {}; // 新設: 指定月Premiumカテゴリ用
+        let globalMonthlyPremiumByType = {};
 
         // 円グラフ用の引き出し線プラグイン
         const pieLabelsLinePlugin = {
@@ -730,7 +731,8 @@
                     ctx.fillStyle = '#EF4444';
                 }
 
-                ctx.font = 'bold 12px sans-serif';
+                const fontSize = window.innerWidth < 768 ? 10 : 12;
+                ctx.font = `bold ${fontSize}px sans-serif`;
                 ctx.textBaseline = 'middle';
                 ctx.textAlign = 'left';
 
@@ -749,7 +751,8 @@
                         const xPos = x.getPixelForValue(total);
                         const yPos = firstMeta.data[index].y;
                         const totalText = '¥' + Math.floor(total).toLocaleString();
-                        ctx.fillText(totalText, xPos + 8, yPos + 1);
+                        const offsetX = window.innerWidth < 768 ? 4 : 8;
+                        ctx.fillText(totalText, xPos + offsetX, yPos + 1);
                     }
                 });
                 ctx.restore();
@@ -776,7 +779,7 @@
         const countryItemRankSelect = document.getElementById('countryItemRankSelect');
         const itemTrackSelect = document.getElementById('itemTrackSelect');
         const targetMonthRankSelect = document.getElementById('targetMonthRankSelect');
-        const premiumTargetMonthSelect = document.getElementById('premiumTargetMonthSelect'); // 新設
+        const premiumTargetMonthSelect = document.getElementById('premiumTargetMonthSelect');
         const targetRevenueInput = document.getElementById('targetRevenueInput');
         const currentRevenueInput = document.getElementById('currentRevenueInput');
         const categoryTrendCountrySelect = document.getElementById('categoryTrendCountrySelect');
@@ -944,7 +947,7 @@
                             color: numbersHidden ? 'transparent' : '#000000',
                             textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
                             textShadowBlur: numbersHidden ? 5 : 0,
-                            font: {weight: 'bold', size: 10},
+                            font: {weight: 'bold', size: window.innerWidth < 768 ? 9 : 10},
                             anchor: 'end',
                             align: 'end',
                             formatter: (value, context) => {
@@ -976,6 +979,27 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
+
+            // ★新設: HTMLを変更せずに「拡大/縮小トグルボタン」を動的追加
+            const monthlyControls = document.getElementById('monthlyCategorySelect');
+            if (monthlyControls && !document.getElementById('viewModeToggleBtn')) {
+                const parent = monthlyControls.parentNode;
+                const btn = document.createElement('button');
+                btn.id = 'viewModeToggleBtn';
+                btn.className = 'text-[10px] md:text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 active:scale-95 transition whitespace-nowrap shadow-sm mr-2 flex items-center gap-1';
+                btn.innerHTML = '🔍 拡大(スクロール)';
+                btn.onclick = () => {
+                    isExpandedView = !isExpandedView;
+                    btn.innerHTML = isExpandedView ? '🗜️ 全体に収める' : '🔍 拡大(スクロール)';
+                    btn.classList.toggle('bg-blue-600', isExpandedView);
+                    btn.classList.toggle('text-white', isExpandedView);
+                    btn.classList.toggle('text-blue-600', !isExpandedView);
+                    btn.classList.toggle('bg-blue-50', !isExpandedView);
+                    renderDashboard();
+                };
+                parent.insertBefore(btn, parent.firstChild);
+            }
+
             try {
                 const cachedMaster = await localforage.getItem('lineMasterData');
                 const cachedUrlsById = await localforage.getItem('lineMasterDataUrls');
@@ -1101,7 +1125,7 @@
         itemTrackSelect.addEventListener('change', () => {drawItemTrackChart(); updateItemDetailYears(); drawItemDetailTrackChart();});
         itemDetailYearSelect.addEventListener('change', () => {drawItemDetailTrackChart();});
         targetMonthRankSelect.addEventListener('change', () => {drawTargetMonthRankChart();});
-        premiumTargetMonthSelect.addEventListener('change', () => {drawPremiumTargetMonthCharts();}); // 新設
+        premiumTargetMonthSelect.addEventListener('change', () => {drawPremiumTargetMonthCharts();});
         categoryTrendCountrySelect.addEventListener('change', () => {renderDashboard();});
         monthlyRankMonthSelect.addEventListener('change', () => {drawMonthlyRankCharts();});
 
@@ -1288,7 +1312,6 @@
 
             const sortedAvailableMonthsDesc = [...availableMonths].sort().reverse();
 
-            // 指定月の売上ランキング用
             const lastMonthRankSelected = targetMonthRankSelect.value;
             targetMonthRankSelect.innerHTML = '';
             sortedAvailableMonthsDesc.forEach(m => {
@@ -1303,7 +1326,6 @@
                 targetMonthRankSelect.value = sortedAvailableMonthsDesc[0];
             }
 
-            // 指定月のPremium売上詳細用
             const lastPremMonthSelected = premiumTargetMonthSelect.value;
             premiumTargetMonthSelect.innerHTML = '';
             sortedAvailableMonthsDesc.forEach(m => {
@@ -1382,7 +1404,7 @@
             globalItemTypes = {};
             globalMonthlyTotal = {};
             globalItemDetailByMonthAndTitle = {};
-            globalMonthlyPremiumByType = {}; // 初期化
+            globalMonthlyPremiumByType = {};
 
             globalData.forEach(row => {
                 const dateStr = row["From (GMT+9:00)"];
@@ -1553,6 +1575,14 @@
                 ];
             }
 
+            // ★ 月別グラフ: トグル連動による高さ調整
+            const monthlyContainer = document.querySelector('.monthly-chart-container');
+            if (monthlyContainer) {
+                // 拡大モードなら月数に合わせて伸ばす、全体表示なら固定幅(350px)
+                const monthlyHeight = isExpandedView ? Math.max(350, sortedMonths.length * 40) : 350;
+                monthlyContainer.style.height = `${monthlyHeight}px`;
+            }
+
             const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
             if (charts['monthlyChart']) charts['monthlyChart'].destroy();
             charts['monthlyChart'] = new Chart(ctxMonthly, {
@@ -1566,23 +1596,25 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     layout: {
-                        padding: {right: 80}
+                        padding: {right: 60}
                     },
                     scales: {
                         x: {stacked: true, beginAtZero: true, ticks: {display: !numbersHidden}},
-                        y: {stacked: true, ticks: {display: true}}
+                        y: {stacked: true, ticks: {display: true, font: {size: window.innerWidth < 768 ? 10 : 12}}}
                     },
                     plugins: {
-                        legend: {display: true, position: 'top'},
+                        legend: {display: true, position: 'top', labels: {boxWidth: 12, font: {size: window.innerWidth < 768 ? 10 : 12}}},
                         datalabels: {
                             color: numbersHidden ? 'transparent' : '#000000',
                             textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
                             textShadowBlur: numbersHidden ? 5 : 0,
-                            font: {weight: 'bold', size: 10},
+                            font: {weight: 'bold', size: window.innerWidth < 768 ? 9 : 10},
                             anchor: 'center',
                             align: 'center',
                             formatter: (value) => {
-                                return value > 50 ? '¥' + value.toLocaleString() : '';
+                                // 縮小表示(全体表示) かつ 月数が多い時は、重ならないよう大きいバーにだけ数値を出す
+                                const threshold = (!isExpandedView && window.innerWidth < 768 && sortedMonths.length > 5) ? 1500 : 300;
+                                return value >= threshold ? '¥' + value.toLocaleString() : '';
                             }
                         }
                     }
@@ -1594,12 +1626,20 @@
             if (avgContainer) {
                 if (sortedMonths.length > 0) {
                     avgContainer.className = 'mb-6 w-full bg-white p-3 rounded-xl border border-gray-100 shadow-sm';
+
+                    // ★ 1日平均グラフ: トグル連動による横幅調整
+                    const minWidthDaily = isExpandedView ? Math.max(100, sortedMonths.length * 50) : 100;
+                    const widthStyle = isExpandedView ? `min-width: ${minWidthDaily}px;` : `width: 100%;`;
+                    const scrollClass = isExpandedView ? `overflow-x-auto` : `overflow-hidden`;
+
                     avgContainer.innerHTML = `
                         <div class="flex justify-between items-center mb-2 border-b pb-1">
-                            <h3 class="text-xs font-bold text-gray-600">⏱️ 1日平均売上の推移 & 前月比 (選択カテゴリ)</h3>
+                            <h3 class="text-xs font-bold text-gray-600">⏱️ 1日平均売上の推移 & 前月比</h3>
                             <button onclick="downloadChart('dailyAvgChart', '1日平均売上推移')" class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] transition">📥 画像保存</button>
                         </div>
-                        <div class="chart-container" style="height: 140px;"><canvas id="dailyAvgChart"></canvas></div>
+                        <div class="${scrollClass} w-full pb-2">
+                            <div class="chart-container" style="height: 150px; ${widthStyle}"><canvas id="dailyAvgChart"></canvas></div>
+                        </div>
                     `;
 
                     const dailyAvgs = [];
@@ -1656,28 +1696,37 @@
                             maintainAspectRatio: false,
                             scales: {
                                 y: {beginAtZero: true, display: false},
-                                x: {display: true, grid: {display: false}, ticks: {font: {size: 10}}}
+                                x: {display: true, grid: {display: false}, ticks: {font: {size: window.innerWidth < 768 ? 9 : 10}}}
                             },
                             plugins: {
                                 legend: {display: false},
                                 datalabels: {
-                                    color: numbersHidden ? 'transparent' : (context) => {
+                                    display: (context) => {
+                                        if (numbersHidden) return false;
+                                        // 縮小表示の時は重なりを防ぐため、ポイントを間引いて表示
+                                        if (!isExpandedView && window.innerWidth < 768 && sortedMonths.length > 5) {
+                                            const step = Math.ceil(sortedMonths.length / 4);
+                                            return context.dataIndex % step === 0 || context.dataIndex === sortedMonths.length - 1;
+                                        }
+                                        return true;
+                                    },
+                                    color: (context) => {
                                         const rate = momRates[context.dataIndex];
                                         if (rate && rate.startsWith('+')) return '#059669';
                                         if (rate && rate.startsWith('-')) return '#DC2626';
                                         return '#4B5563';
                                     },
                                     textShadowColor: (context) => {
-                                        if (!numbersHidden) return 'transparent';
                                         const rate = momRates[context.dataIndex];
                                         if (rate && rate.startsWith('+')) return 'rgba(5, 150, 105, 0.6)';
                                         if (rate && rate.startsWith('-')) return 'rgba(220, 38, 38, 0.6)';
                                         return 'rgba(75, 85, 99, 0.6)';
                                     },
-                                    textShadowBlur: numbersHidden ? 5 : 0,
-                                    font: {weight: 'bold', size: 10},
+                                    textShadowBlur: 0,
+                                    font: {weight: 'bold', size: window.innerWidth < 768 ? 9 : 10},
                                     anchor: 'end',
                                     align: 'top',
+                                    offset: 4,
                                     formatter: (value, context) => {
                                         const rate = momRates[context.dataIndex];
                                         return rate ? `¥${value}\n(${rate})` : `¥${value}`;
@@ -1685,7 +1734,7 @@
                                     textAlign: 'center'
                                 }
                             },
-                            layout: {padding: {top: 35, right: 20, left: 20}}
+                            layout: {padding: {top: 40, right: 20, left: 20}}
                         },
                         plugins: [whiteBackgroundPlugin]
                     });
@@ -1788,7 +1837,7 @@
                             color: numbersHidden ? 'transparent' : '#000000',
                             textShadowColor: numbersHidden ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
                             textShadowBlur: numbersHidden ? 5 : 0,
-                            font: {weight: 'bold', size: 10},
+                            font: {weight: 'bold', size: window.innerWidth < 768 ? 9 : 10},
                             anchor: 'center',
                             align: 'center',
                             formatter: (value) => {
@@ -1886,7 +1935,6 @@
             createChart('emojiTrendChart', 'bar', sortedMonthsTrendAll, emojiData, '収益 (円)', typeColors['Emoji'] || defaultColor, trendOptions);
             createChart('themeTrendChart', 'bar', sortedMonthsTrendAll, themeData, '収益 (円)', typeColors['Theme'] || defaultColor, trendOptions);
 
-            // ① 収益依存度 (通常 vs Premium)
             const normalRev = totalRevenue - totalPremiumRevenue;
             createChart('premiumRatioChart', 'doughnut',
                 ['通常販売', 'Premium (定額制)'],
@@ -1895,7 +1943,6 @@
                 {bg: ['rgba(59, 130, 246, 0.8)', 'rgba(234, 179, 8, 0.8)'], border: '#ffffff'}
             );
 
-            // ② カテゴリ別プレミアム相性 (累計)
             const premCats = Object.keys(totalPremiumByType).sort((a, b) => totalPremiumByType[b] - totalPremiumByType[a]);
             const premCatData = premCats.map(c => totalPremiumByType[c]);
             const premCatBg = premCats.map(c => typeColors[c] ? typeColors[c].bg : defaultColor.bg);
@@ -1907,7 +1954,6 @@
                 {bg: premCatBg, border: '#ffffff'}
             );
 
-            // ③ 月別 Premium分配金推移
             const sortedPremMonths = Object.keys(globalMonthlyTotal).sort();
             const premMonthData = sortedPremMonths.map(m => monthlyPremiumTotal[m] || 0);
             createChart('premiumTrendChart', 'bar',
@@ -1918,7 +1964,6 @@
                 {layout: {padding: {top: 20}}, scales: {y: {beginAtZero: true}}, plugins: {datalabels: {display: false}}}
             );
 
-            // ④ 実利用度ランキング (累計 Top 20)
             const sortedPremItems = Object.keys(premiumItemsRev).sort((a, b) => premiumItemsRev[b] - premiumItemsRev[a]).slice(0, 20);
             const premItemData = sortedPremItems.map(i => premiumItemsRev[i]);
             const premItemBg = sortedPremItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
@@ -1931,12 +1976,11 @@
                 {indexAxis: 'y', layout: {padding: {right: 85}}}
             );
 
-            drawPremiumTargetMonthCharts(); // 新設: 指定月のPremiumチャート描画
+            drawPremiumTargetMonthCharts();
 
             generateAIComment();
         }
 
-        // 新設: 指定月のPremiumチャートを描画する関数
         function drawPremiumTargetMonthCharts() {
             const targetMonth = premiumTargetMonthSelect.value;
             if (!targetMonth) {
@@ -1945,7 +1989,6 @@
                 return;
             }
 
-            // 1. 指定月 カテゴリ比率 (Premium)
             const catData = globalMonthlyPremiumByType[targetMonth] || {};
             const premCats = Object.keys(catData).sort((a, b) => catData[b] - catData[a]);
             const premCatValues = premCats.map(c => catData[c]);
@@ -1959,7 +2002,6 @@
                 {bg: premCatBg, border: '#ffffff'}
             );
 
-            // 2. 指定月 実利用度ランキング (Top 10)
             const itemDataObj = globalItemDetailByMonthAndTitle[targetMonth] || {};
             const premItemsRev = {};
             Object.keys(itemDataObj).forEach(title => {
@@ -2122,7 +2164,8 @@
             }
 
             const container = document.getElementById('itemDetailTrackChartContainer');
-            const requiredHeight = Math.max(300, sortedMonths.length * 30 + 100);
+            // ★ 指定アイテム詳細チャートもトグルに連動させて高さを調整
+            const requiredHeight = isExpandedView ? Math.max(300, sortedMonths.length * 30 + 100) : 300;
             container.style.height = requiredHeight + 'px';
 
             const dataRev = sortedMonths.map(m => monthlyRev[m] || 0);
