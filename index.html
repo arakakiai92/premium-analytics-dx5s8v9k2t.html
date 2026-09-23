@@ -416,8 +416,11 @@
 </div>
 </div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
 <div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">🗓️ 指定月の売上総合ランキング (Top 10) <span class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
+<h2 id="targetMonthRankTitle" class="text-sm md:text-base font-bold text-gray-700">🗓️ 指定月の売上総合ランキング (Top 10) <span class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
 <div class="flex items-center gap-3">
+<button id="targetMonthRankExpandBtn" type="button"
+class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition whitespace-nowrap"
+onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
 <button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('targetMonthRankChart', '指定月総合ランキング_' + document.getElementById('targetMonthRankSelect').value)">
                             📥 画像保存
                         </button>
@@ -746,6 +749,7 @@
         const countryItemRankSelect = document.getElementById('countryItemRankSelect');
         const itemTrackSelect = document.getElementById('itemTrackSelect');
         const targetMonthRankSelect = document.getElementById('targetMonthRankSelect');
+        let targetMonthRankLimit = 10;
         const premiumTargetMonthSelect = document.getElementById('premiumTargetMonthSelect');
         const targetRevenueInput = document.getElementById('targetRevenueInput');
         const currentRevenueInput = document.getElementById('currentRevenueInput');
@@ -1100,7 +1104,10 @@
         countryItemRankSelect.addEventListener('change', () => {drawCountryItemRankChart();});
         itemTrackSelect.addEventListener('change', () => {drawItemTrackChart(); updateItemDetailYears(); drawItemDetailTrackChart();});
         itemDetailYearSelect.addEventListener('change', () => {drawItemDetailTrackChart();});
-        targetMonthRankSelect.addEventListener('change', () => {drawTargetMonthRankChart();});
+        targetMonthRankSelect.addEventListener('change', () => {
+            targetMonthRankLimit = 10;
+            drawTargetMonthRankChart();
+        });
         premiumTargetMonthSelect.addEventListener('change', () => {drawPremiumTargetMonthCharts(); drawPremiumRescuedItems();});
         categoryTrendCountrySelect.addEventListener('change', () => {renderDashboard();});
         monthlyRankMonthSelect.addEventListener('change', () => {drawMonthlyRankCharts();});
@@ -2791,14 +2798,53 @@
 
             const itemsRev = globalItemRevByMonthAndTitle[targetMonth];
             const itemsCount = globalItemCountByMonthAndTitle[targetMonth] || {};
-            const sortedItems = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]).slice(0, 10);
+            const allSortedItems = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]);
+
+            const displayLimit = Math.min(targetMonthRankLimit, allSortedItems.length);
+            const sortedItems = allSortedItems.slice(0, displayLimit);
 
             const dataRev = sortedItems.map(i => itemsRev[i]);
             const dataCount = sortedItems.map(i => itemsCount[i] || 0);
             const bgColors1 = sortedItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].bg : defaultColor.bg);
             const borderColors1 = sortedItems.map(title => typeColors[globalItemTypes[title]] ? typeColors[globalItemTypes[title]].border : defaultColor.border);
 
+            const chartContainer = document.getElementById('targetMonthRankChart')?.parentElement;
+            if (chartContainer) {
+                chartContainer.style.height = `${Math.max(250, displayLimit * 35 + 40)}px`;
+            }
+
+            const titleEl = document.getElementById('targetMonthRankTitle');
+            if (titleEl) {
+                const note = '<span class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span>';
+                titleEl.innerHTML = `🗓️ 指定月の売上総合ランキング (Top ${displayLimit}) ${note}`;
+            }
+
+            const btn = document.getElementById('targetMonthRankExpandBtn');
+            if (btn) {
+                if (allSortedItems.length <= 10) {
+                    btn.classList.add('hidden');
+                } else {
+                    btn.classList.remove('hidden');
+                    btn.textContent = displayLimit >= allSortedItems.length ? '10件に戻す' : '＋10件表示';
+                }
+            }
+
             createChart('targetMonthRankChart', 'bar', sortedItems, dataRev, '収益 (円)', {bg: bgColors1, border: borderColors1}, {indexAxis: 'y', layout: {padding: {right: 85}}}, dataCount);
+        }
+
+        function toggleTargetMonthRankExpanded() {
+            const targetMonth = targetMonthRankSelect.value;
+            const totalItems = Object.keys(globalItemRevByMonthAndTitle[targetMonth] || {}).length;
+
+            if (totalItems <= 10) return;
+
+            if (targetMonthRankLimit >= totalItems) {
+                targetMonthRankLimit = 10;
+            } else {
+                targetMonthRankLimit = Math.min(targetMonthRankLimit + 10, totalItems);
+            }
+
+            drawTargetMonthRankChart();
         }
 
         function drawMonthlyRankCharts() {
