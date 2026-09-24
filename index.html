@@ -98,7 +98,7 @@
 </div>
 </div>
 <div class="border-t pt-4 mt-2">
-<label class="block mb-2 text-sm font-bold text-gray-700">※ 除外するタイトルキーワード（任意）:</label>
+<label class="block mb-2 text-sm font-bold text-gray-700">6. 除外するタイトルキーワード（任意）:</label>
 <div class="flex flex-col sm:flex-row gap-2">
 <input id="excludeTitleKeywords" type="text" class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:max-w-md" placeholder="例：あけおめ、年賀、Happy New Year">
 <button id="applyExcludeTitleBtn" type="button" class="text-xs font-bold text-white bg-[#00C300] hover:bg-[#009900] px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap">🔍 除外を適用</button>
@@ -184,9 +184,9 @@
 <p class="text-[10px] text-gray-400 mt-2 md:hidden">※スマホではグラフを左右にスクロールして全ての数字を確認できます。</p>
 </div></div></section><section class="lg:col-span-2 space-y-3 md:space-y-4"><div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3"><h2 class="text-base md:text-lg font-black text-gray-700">🚀 変化・売上構造</h2><p class="text-[10px] md:text-xs text-gray-400 pb-0.5">「伸びている作品」と「売上の集中度」を確認</p></div><div class="grid grid-cols-1 gap-4 md:gap-6"><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
 <div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">🚀 前月比 急上昇アイテム (Top 5)</h2>
+<h2 class="text-sm md:text-base font-bold text-gray-700">🚀 前月比 急上昇アイテム (Top 10)</h2>
 </div>
-<div class="space-y-2" id="trendArea">
+<div class="grid grid-cols-1 md:grid-cols-2 md:grid-flow-col md:grid-rows-5 gap-3 md:gap-4" id="trendArea">
 <p class="text-xs text-gray-400">※CSVデータを読み込むと、前月から売上が伸びているアイテムがここに表示されます。</p>
 </div>
 </div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
@@ -2101,7 +2101,7 @@ onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
                     }
                 });
                 trends.sort((a, b) => b.diff - a.diff);
-                const topTrends = trends.slice(0, 5);
+                const topTrends = trends.slice(0, 10);
 
                 if (topTrends.length > 0) {
                     topTrends.forEach((item, index) => {
@@ -2116,27 +2116,38 @@ onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
                         const displayRate = item.rate === null ? '新規' : `${item.rate >= 0 ? '+' : ''}${item.rate.toFixed(1)}%`;
                         const displayCount = `${item.latestCount.toLocaleString()}件`;
                         const row = document.createElement('div');
-                        row.className = `grid grid-cols-[42px_minmax(0,1fr)] md:grid-cols-[50px_minmax(0,1fr)_330px] items-center gap-2 md:gap-4 p-2.5 md:p-3 rounded-lg border ${bgClass}`;
+                        row.className = `p-2.5 md:p-3 rounded-lg border ${bgClass}`;
                         row.innerHTML = `
-                            <div class="text-center">
-                                <span class="inline-flex w-7 h-7 md:w-8 md:h-8 items-center justify-center rounded-full bg-white border border-gray-200 text-xs md:text-sm font-black text-gray-700">${rank}</span>
-                            </div>
-                            <div class="min-w-0">
-                                <div class="font-bold text-xs md:text-sm text-gray-800 break-words leading-snug">${escapeHtmlForDashboard(item.title)}</div>
-                                <div class="text-[10px] md:text-xs text-gray-500 mt-0.5">${prevMonth} → ${latestMonth}</div>
-                                <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] md:text-xs">
-                                    <span class="text-gray-500">${prevMonth} <span ${blurStyle}>${displayPrev}</span></span>
-                                    <span class="text-gray-400">→</span>
-                                    <span class="font-bold text-gray-700">${latestMonth} <span ${blurStyle}>${displayLatest}</span></span>
-                                    <span class="${colorClass} font-black">${sign}<span ${blurStyle}>${displayDiff}</span></span>
-                                    <span class="${colorClass} font-black"><span ${blurStyle}>${displayRate}</span></span>
-                                    <span class="text-gray-500">販売 <span ${blurStyle}>${displayCount}</span></span>
+                            <div class="flex items-start gap-2">
+                                <div class="shrink-0">
+                                    <span class="inline-flex w-7 h-7 md:w-8 md:h-8 items-center justify-center rounded-full bg-white border border-gray-200 text-xs md:text-sm font-black text-gray-700">${rank}</span>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-bold text-xs md:text-sm text-gray-800 break-words leading-snug">${escapeHtmlForDashboard(item.title)}</div>
+                                    <div class="text-[10px] md:text-xs text-gray-500 mt-0.5">${prevMonth} → ${latestMonth}</div>
                                 </div>
                             </div>
-                            <div class="hidden md:flex items-center justify-end gap-3 text-right whitespace-nowrap">
-                                <div><div class="text-[10px] text-gray-400">増加額</div><div class="font-black text-xs ${colorClass}">${sign}<span ${blurStyle}>${displayDiff}</span></div></div>
-                                <div><div class="text-[10px] text-gray-400">増加率</div><div class="font-black text-xs ${colorClass}"><span ${blurStyle}>${displayRate}</span></div></div>
-                                <div><div class="text-[10px] text-gray-400">販売件数</div><div class="font-black text-xs text-gray-700"><span ${blurStyle}>${displayCount}</span></div></div>
+                            <div class="grid grid-cols-2 gap-x-3 gap-y-2 mt-2.5 pt-2 border-t border-gray-200/70">
+                                <div>
+                                    <div class="text-[9px] md:text-[10px] text-gray-400">前月 → 今月</div>
+                                    <div class="font-bold text-[10px] md:text-xs text-gray-700 whitespace-nowrap">
+                                        <span ${blurStyle}>${displayPrev}</span>
+                                        <span class="text-gray-400 mx-0.5">→</span>
+                                        <span ${blurStyle}>${displayLatest}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] md:text-[10px] text-gray-400">増加額</div>
+                                    <div class="font-black text-[10px] md:text-xs ${colorClass}">${sign}<span ${blurStyle}>${displayDiff}</span></div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] md:text-[10px] text-gray-400">増加率</div>
+                                    <div class="font-black text-[10px] md:text-xs ${colorClass}"><span ${blurStyle}>${displayRate}</span></div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] md:text-[10px] text-gray-400">販売件数</div>
+                                    <div class="font-black text-[10px] md:text-xs text-gray-700"><span ${blurStyle}>${displayCount}</span></div>
+                                </div>
                             </div>`;
                         trendArea.appendChild(row);
                     });
@@ -3212,7 +3223,11 @@ onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
       <div class="space-y-4 text-xs md:text-sm text-gray-600">
 
         <div>
-          <div class="font-bold text-gray-800 mb-1">Ver.1.0.4</div>
+          <div class="font-bold text-gray-800 mb-1">Ver.1.0.5
+  - 「前月比 急上昇アイテム」をTop 5からTop 10へ拡張
+  - PC/タブレットでは2カラム表示に変更し、横長の余白を有効活用
+  - 各カードに「前月→今月・増加額・増加率・販売件数」を表示
+  - スマホでは従来どおり1カラムで表示</div>
           <ul class="list-disc ml-5 space-y-1">
             <li>タイトルに指定したキーワードを含む作品を、分析・ランキングから除外できる「タイトル除外フィルター」を追加</li>
             <li>「あけおめ」「年賀」などの季節作品を除外して、通常作品の売上傾向を確認できるように変更</li>
