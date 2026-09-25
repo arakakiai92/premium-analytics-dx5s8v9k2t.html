@@ -1,25 +1,27 @@
 <!DOCTYPE html>
 
 <html lang="ja">
+
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-<title>LINE売上分析アプリPro+</title>
-<link href="favicon.png?v=2026" rel="icon" type="image/png"/>
-<link href="favicon.png?v=2026" rel="apple-touch-icon"/>
-<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-J0XVCEF17D"></script>
-<script>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+    <title>LINE売上分析アプリPro+</title>
+    <link href="favicon.png?v=2026" rel="icon" type="image/png" />
+    <link href="favicon.png?v=2026" rel="apple-touch-icon" />
+    <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-J0XVCEF17D"></script>
+    <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() {dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', 'G-J0XVCEF17D');
     </script>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-<style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <style>
         /* 背景はクリーンな白固定 */
         body {
             background-color: #ffffff;
@@ -49,550 +51,806 @@
         }
     </style>
 </head>
+
 <body class="text-gray-800 pb-4">
-<header class="bg-[#00C300] text-white shadow-md sticky top-0 z-10">
-<div class="max-w-6xl mx-auto flex items-center justify-between px-4">
-<div class="flex items-center">
-<img alt="シーサーアイコン" class="h-16 w-auto block object-contain" src="top-left.png"/>
-<h1 class="text-lg md:text-xl font-bold ml-3 py-4">LINE Sales Analytics Pro+</h1>
-</div>
-<div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 py-2 sm:py-0">
-<a class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap" href="https://aalinezipmaker.netlify.app/" rel="noopener noreferrer" target="_blank">
+    <header class="bg-[#00C300] text-white shadow-md sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto flex items-center justify-between px-4">
+            <div class="flex items-center">
+                <img alt="シーサーアイコン" class="h-16 w-auto block object-contain" src="top-left.png" />
+                <h1 class="text-lg md:text-xl font-bold ml-3 py-4">LINE Sales Analytics Pro+</h1>
+            </div>
+            <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 py-2 sm:py-0">
+                <a class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap"
+                    href="https://aalinezipmaker.netlify.app/" rel="noopener noreferrer" target="_blank">
                     🔗スタンプ/絵文字 ZIPメーカー
                 </a>
-<a class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap" href="https://sales-graph-analyzer.vercel.app/" rel="noopener noreferrer" target="_blank">
+                <a class="text-xs md:text-sm font-bold text-white hover:text-green-100 transition no-underline whitespace-nowrap"
+                    href="https://sales-graph-analyzer.vercel.app/" rel="noopener noreferrer" target="_blank">
                     📊売上スクショ分析
                 </a>
-<button class="text-xs md:text-sm font-bold text-white bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition whitespace-nowrap" id="toggleNumbersBtn" onclick="toggleNumbers()">
+                <button
+                    class="text-xs md:text-sm font-bold text-white bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition whitespace-nowrap"
+                    id="toggleNumbersBtn" onclick="toggleNumbers()">
                     🙈 数字を隠す
                 </button>
-</div>
-</div>
-</header>
-<main class="p-4 max-w-6xl mx-auto space-y-6">
-<div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 relative">
-<div class="hidden absolute top-4 right-4 flex items-center gap-3" id="cacheStatusArea">
-<span class="bg-green-100 text-green-800 text-[10px] md:text-xs font-bold px-2 py-1 rounded shadow-sm">
+            </div>
+        </div>
+    </header>
+    <main class="p-4 max-w-6xl mx-auto space-y-6">
+        <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 relative">
+            <div class="hidden absolute top-4 right-4 flex items-center gap-3" id="cacheStatusArea">
+                <span class="bg-green-100 text-green-800 text-[10px] md:text-xs font-bold px-2 py-1 rounded shadow-sm">
                     💾 前回のデータを自動復元しました
                 </span>
-<button class="text-[10px] md:text-xs font-bold text-red-500 hover:text-red-700 underline transition" onclick="clearCache()">
+                <button class="text-[10px] md:text-xs font-bold text-red-500 hover:text-red-700 underline transition"
+                    onclick="clearCache()">
                     🗑️ リセット
                 </button>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4 mb-4 mt-8 md:mt-4">
-<div class="border p-4 rounded-lg bg-gray-50">
-<label class="block mb-2 text-sm font-bold text-gray-700">1. 売上CSVを一括選択 (必須):</label>
-<input accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-green-100 file:text-[#00C300] hover:file:bg-green-200 cursor-pointer transition" id="csvFileInput" multiple="" type="file"/>
-</div>
-<div class="border p-4 rounded-lg bg-gray-50 flex flex-col justify-between">
-<div>
-<label class="block mb-2 text-sm font-bold text-gray-700">2. マスターデータCSV (任意・複数可):</label>
-<input accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-100 file:text-blue-600 hover:file:bg-blue-200 cursor-pointer transition" id="masterFileInput" multiple="" type="file"/>
-<p class="text-xs text-gray-500 mt-2">※日本語タイトルを表示したい場合は、作成したマスターデータをすべて読み込んでください。</p>
-</div>
-<div class="mt-3 text-right">
-<a class="text-xs font-bold text-blue-600 border border-blue-200 bg-white px-3 py-1.5 rounded shadow-sm hover:bg-blue-50 transition w-full md:w-auto inline-block text-center no-underline active:scale-95" href="generator.html" rel="noopener noreferrer" target="_blank">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4 mb-4 mt-8 md:mt-4">
+                <div class="border p-4 rounded-lg bg-gray-50">
+                    <label class="block mb-2 text-sm font-bold text-gray-700">1. 売上CSVを一括選択 (必須):</label>
+                    <input accept=".csv"
+                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-green-100 file:text-[#00C300] hover:file:bg-green-200 cursor-pointer transition"
+                        id="csvFileInput" multiple="" type="file" />
+                </div>
+                <div class="border p-4 rounded-lg bg-gray-50 flex flex-col justify-between">
+                    <div>
+                        <label class="block mb-2 text-sm font-bold text-gray-700">2. マスターデータCSV (任意・複数可):</label>
+                        <input accept=".csv"
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-100 file:text-blue-600 hover:file:bg-blue-200 cursor-pointer transition"
+                            id="masterFileInput" multiple="" type="file" />
+                        <p class="text-xs text-gray-500 mt-2">※日本語タイトルを表示したい場合は、作成したマスターデータをすべて読み込んでください。</p>
+                    </div>
+                    <div class="mt-3 text-right">
+                        <a class="text-xs font-bold text-blue-600 border border-blue-200 bg-white px-3 py-1.5 rounded shadow-sm hover:bg-blue-50 transition w-full md:w-auto inline-block text-center no-underline active:scale-95"
+                            href="generator.html" rel="noopener noreferrer" target="_blank">
                             ✏️ 別アプリで日本語表示用マスターデータを生成する
                         </a>
-</div>
-</div>
-</div>
-<div class="border-t pt-4 mt-2">
-<label class="block mb-2 text-sm font-bold text-gray-700">6. 除外するタイトルキーワード（任意）:</label>
-<div class="flex flex-col sm:flex-row gap-2">
-<input id="excludeTitleKeywords" type="text" class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:max-w-md" placeholder="例：あけおめ、年賀、Happy New Year">
-<button id="applyExcludeTitleBtn" type="button" class="text-xs font-bold text-white bg-[#00C300] hover:bg-[#009900] px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap">🔍 除外を適用</button>
-<button id="clearExcludeTitleBtn" type="button" class="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap">解除</button>
-</div>
-<p class="text-[10px] md:text-xs text-gray-500 mt-2">※タイトルに指定したキーワードを含む作品を、分析・ランキングの集計対象から除外します。複数指定する場合は「、」「,」または改行で区切ってください。</p>
-<p id="excludeTitleStatus" class="text-xs font-bold text-[#00C300] mt-1 hidden"></p>
-</div>
-<div class="flex flex-col gap-4">
-<div class="hidden" id="yearFilterSection">
-<label class="block mb-2 text-sm font-bold text-gray-700">3. 年単位で一括選択 / 解除:</label>
-<div class="flex flex-wrap gap-2" id="yearFilterContainer"></div>
-</div>
-<div>
-<label class="block mb-2 text-sm font-bold text-gray-700">4. 表示する月を選択 (複数選択可):</label>
-<div class="flex flex-wrap gap-2" id="monthFilterContainer">
-<span class="text-sm text-gray-400">※売上CSVを読み込むとここに月ボタンが表示されます</span>
-</div>
-</div>
-<div class="border-t pt-4" id="targetRevenueSection">
-<label class="block mb-2 text-sm font-bold text-gray-700">5. 今月の売上目標と現在の進捗を入力 (円):</label>
-<div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
-<div class="flex items-center gap-2 w-full sm:w-auto">
-<span class="text-xs text-gray-500 min-w-[60px]">目標金額:</span>
-<input class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:w-32" id="targetRevenueInput" placeholder="例: 50000" type="number" value="50000"/>
-</div>
-<div class="flex items-center gap-2 w-full sm:w-auto">
-<span class="text-xs text-gray-500 min-w-[60px]">現在の売上:</span>
-<input class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:w-32" id="currentRevenueInput" placeholder="例: 15000" type="number" value="0"/>
-</div>
-<div class="w-full sm:w-64 bg-gray-100 rounded-full h-5 relative overflow-hidden border" id="targetProgressContainer">
-<div class="bg-[#00C300] h-full transition-all duration-500" id="targetProgressBar" style="width: 0%"></div>
-<span class="absolute inset-0 flex items-center justify-center text-xs font-black text-gray-700" id="targetProgressText">0%</span>
-</div>
-<p class="text-xs font-bold text-gray-600 min-w-[200px]" id="targetMessage"></p>
-</div>
-</div>
-</div>
-</div>
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
-<div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-[#00C300]">
-<p class="text-xs text-gray-500 font-bold">総収益 (分配金総額)</p>
-<p class="text-xl md:text-2xl font-black text-gray-800 mt-1" id="kpiRevenue">¥0</p>
-<p class="text-[10px] text-green-600 font-bold mt-1 hidden" id="kpiPremiumRevenue">(うちPremium: ¥0)</p>
-</div>
-<div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
-<p class="text-xs text-gray-500 font-bold">期間中累計推定手取り</p>
-<p class="text-xl md:text-2xl font-black text-blue-600 mt-1" id="kpiNetRevenue">¥0</p>
-</div>
-<div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
-<p class="text-xs text-gray-500 font-bold" title="ユーザーが購入した総額（※通常販売のみ）">総流通額（ユーザー課金額）</p>
-<p class="text-xl md:text-2xl font-black text-purple-600 mt-1" id="kpiTotalSalesAmount">¥0</p>
-<p class="text-[10px] text-purple-400 font-bold mt-1">(※通常販売のみ)</p>
-</div>
-<div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-green-500">
-<p class="text-xs text-gray-500 font-bold">総販売数 (件)</p>
-<p class="text-xl md:text-2xl font-black text-gray-800 mt-1" id="kpiSalesCount">0</p>
-</div>
-<div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-yellow-500">
-<p class="text-xs text-gray-500 font-bold">No.1 売上アイテム</p>
-<a class="text-sm md:text-base font-bold text-blue-600 hover:text-blue-800 mt-1 truncate block no-underline transition-colors" href="#" id="kpiTopItem" rel="noopener noreferrer" target="_blank">-</a>
-</div>
-</div>
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"><section class="lg:col-span-2 space-y-3 md:space-y-4"><div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3"><h2 class="text-base md:text-lg font-black text-gray-700">📊 全体状況</h2><p class="text-[10px] md:text-xs text-gray-400 pb-0.5">まず「今どれくらい売れているか」を確認</p></div><div class="grid grid-cols-1 gap-4 md:gap-6"><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">📅 月別収益推移</h2>
-<div class="flex items-center gap-3">
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('monthlyChart', '月別収益推移')">
-                            📥 画像保存
-                        </button>
-<select class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]" id="monthlyCategorySelect">
-<option value="ALL">すべてのカテゴリ (積み上げ)</option>
-</select>
-</div>
-</div>
-<div class="flex flex-wrap gap-2 mb-4 text-xs font-bold text-gray-600 hidden" id="monthlyAverageContainer">
-</div>
-<div class="monthly-chart-container overflow-x-auto" id="monthlyChartScroll">
-<div id="monthlyChartInner" style="min-width: 760px; height: 100%;">
-<canvas id="monthlyChart"></canvas>
-</div>
-</div>
-<p class="text-[10px] text-gray-400 mt-2 md:hidden">※スマホではグラフを左右にスクロールして全ての数字を確認できます。</p>
-</div></div></section><section class="lg:col-span-2 space-y-3 md:space-y-4"><div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3"><h2 class="text-base md:text-lg font-black text-gray-700">🚀 変化・売上構造</h2><p class="text-[10px] md:text-xs text-gray-400 pb-0.5">「伸びている作品」と「売上の集中度」を確認</p></div><div class="grid grid-cols-1 gap-4 md:gap-6"><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">🚀 前月比 急上昇アイテム (Top 10)</h2>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 md:grid-flow-col md:grid-rows-5 gap-3 md:gap-4" id="trendArea">
-<p class="text-xs text-gray-400">※CSVデータを読み込むと、前月から売上が伸びているアイテムがここに表示されます。</p>
-</div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">⚖️ パレート分析 (ABC分析: 売上依存度の可視化)</h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('paretoChart', 'パレート分析')">
-                        📥 画像保存
-                    </button>
-</div>
-<p class="text-xs text-gray-600 mb-2 font-bold" id="paretoComment"></p>
-<div class="chart-container" style="height: 350px;"><canvas id="paretoChart"></canvas></div>
-</div></div></section><section class="lg:col-span-2 space-y-3 md:space-y-4"><div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3"><h2 class="text-base md:text-lg font-black text-gray-700">🏆 売上ランキング・構成</h2><p class="text-[10px] md:text-xs text-gray-400 pb-0.5">何が売上を作っているのかを比較</p></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">👑 全体収益ランキング (Top 20) <span class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('itemChart', '全体収益ランキング')">
-                        📥 画像保存
-                    </button>
-</div>
-<div class="chart-container" style="height: 500px;"><canvas id="itemChart"></canvas></div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">🛍️ 全体販売数ランキング (Top 20) <span class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('salesCountChart', '全体販売数ランキング')">
-                        📥 画像保存
-                    </button>
-</div>
-<div class="chart-container" style="height: 500px;"><canvas id="salesCountChart"></canvas></div>
-</div><div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:col-span-2">
-<div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-xs md:text-sm font-bold text-gray-700">🌍 販売国シェア</h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition" onclick="downloadChart('countryChart', '販売国シェア')">
-                            📥 保存
-                        </button>
-</div>
-<div class="chart-container" style="height: 300px;"><canvas id="countryChart"></canvas></div>
-</div>
-<div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-xs md:text-sm font-bold text-gray-700">🎨 種類シェア</h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition" onclick="downloadChart('typeChart', '種類別シェア')">
-                            📥 保存
-                        </button>
-</div>
-<div class="chart-container" style="height: 300px;"><canvas id="typeChart"></canvas></div>
-</div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">📊 カテゴリ別 総売上比較</h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('categorySummaryChart', 'カテゴリ別総売上比較')">
-                        📥 画像保存
-                    </button>
-</div>
-<div class="chart-container" style="height: 180px;"><canvas id="categorySummaryChart"></canvas></div>
-</div></div></section><section class="lg:col-span-2 space-y-3 md:space-y-4"><div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3"><h2 class="text-base md:text-lg font-black text-gray-700">🌍 市場・国別分析</h2><p class="text-[10px] md:text-xs text-gray-400 pb-0.5">どの国で、どのくらいの売上・手取りが発生しているかを確認</p></div><div class="grid grid-cols-1 gap-4 md:gap-6"><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">📊 国別 売上ランキング</h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('countryRankChart', '国別売上ランキング')">
-                        📥 画像保存
-                    </button>
-</div>
-<div class="chart-container"><canvas id="countryRankChart"></canvas></div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">💸 国別の「実質手取り率（利益率）」比較</h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('countryProfitRateChart', '国別実質手取り率')">
-                        📥 画像保存
-                    </button>
-</div>
-<p class="text-xs text-gray-500 mb-2">※(分配金 / ユーザー課金額) × 100 で算出。税金等の影響で国ごとに異なります。(※データ件数が少ない国は除外)</p>
-<div class="chart-container" style="height: 250px;"><canvas id="countryProfitRateChart"></canvas></div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">🗺️ 国別詳細 アイテムランキング (Top 20) <span class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
-<div class="flex items-center gap-3">
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('countryItemRankChart', '国別詳細アイテムランキング_' + document.getElementById('countryItemRankSelect').value)">
-                            📥 画像保存
-                        </button>
-<select class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]" id="countryItemRankSelect">
-</select>
-</div>
-</div>
-<div class="chart-container" style="height: 500px;"><canvas id="countryItemRankChart"></canvas></div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">🇯🇵 国内 vs 🌍 海外 売上推移</h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition" onclick="downloadChart('jpVsOverseasChart', '国内_海外_売上推移')">
-                        📥 画像保存
-                    </button>
-</div>
-<div class="chart-container"><canvas id="jpVsOverseasChart"></canvas></div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">🌍 直近半年のカテゴリ比率 (海外限定)</h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition" onclick="downloadChart('overseasCategoryRatioChart', '海外限定_カテゴリ比率')">
-                        📥 画像保存
-                    </button>
-</div>
-<div class="chart-container" style="height: 300px;"><canvas id="overseasCategoryRatioChart"></canvas>
-</div>
-</div></div></section><section class="lg:col-span-2 space-y-3 md:space-y-4"><div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3"><h2 class="text-base md:text-lg font-black text-gray-700">📈 カテゴリ・時系列分析</h2><p class="text-[10px] md:text-xs text-gray-400 pb-0.5">カテゴリの推移、月別人気、作品のライフサイクルを確認</p></div><div class="grid grid-cols-1 gap-4 md:gap-6"><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 space-y-4">
-<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2">
-<h2 class="text-sm md:text-base font-bold text-gray-700 flex items-center gap-1">
-                        📊 カテゴリ別 売上推移
-                    </h2>
-<div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-<span class="text-xs font-bold text-gray-500 whitespace-nowrap">表示国:</span>
-<select class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]" id="categoryTrendCountrySelect">
-<option value="ALL">すべての国 (全国)</option>
-</select>
-</div>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-<div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
-<div class="flex justify-between items-center border-b pb-1 mb-3">
-<h3 class="text-xs font-bold text-gray-600">🎨 スタンプ</h3>
-<button class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition" onclick="downloadChart('stickerTrendChart', 'スタンプ売上推移')">
-                                📥 保存
+                    </div>
+                </div>
+            </div>
+            <div class="border-t pt-4 mt-2">
+                <label class="block mb-2 text-sm font-bold text-gray-700">6. 除外するタイトルキーワード（任意）:</label>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input id="excludeTitleKeywords" type="text"
+                        class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:max-w-md"
+                        placeholder="例：あけおめ、年賀、Happy New Year">
+                    <select id="excludeTitleScope"
+                        class="p-2 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300]">
+                        <option value="normal">適用範囲：通常販売のみ</option>
+                        <option value="normalPremium">適用範囲：通常販売＋Premium</option>
+                    </select>
+                    <button id="applyExcludeTitleBtn" type="button"
+                        class="text-xs font-bold text-white bg-[#00C300] hover:bg-[#009900] px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap">🔍
+                        除外を適用</button>
+                    <button id="clearExcludeTitleBtn" type="button"
+                        class="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap">解除</button>
+                </div>
+                <p class="text-[10px] md:text-xs text-gray-500 mt-2">
+                    ※タイトルに指定したキーワードを含む作品を、分析・ランキングの集計対象から除外します。複数指定する場合は「、」「,」または改行で区切ってください。「適用範囲」で、Premiumデータも除外するかを選べます。</p>
+                <p id="excludeTitleStatus" class="text-xs font-bold text-[#00C300] mt-1 hidden"></p>
+            </div>
+            <div class="flex flex-col gap-4">
+                <div class="hidden" id="yearFilterSection">
+                    <label class="block mb-2 text-sm font-bold text-gray-700">3. 年単位で一括選択 / 解除:</label>
+                    <div class="flex flex-wrap gap-2" id="yearFilterContainer"></div>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-bold text-gray-700">4. 表示する月を選択 (複数選択可):</label>
+                    <div class="flex flex-wrap gap-2" id="monthFilterContainer">
+                        <span class="text-sm text-gray-400">※売上CSVを読み込むとここに月ボタンが表示されます</span>
+                    </div>
+                </div>
+                <div class="border-t pt-4" id="targetRevenueSection">
+                    <label class="block mb-2 text-sm font-bold text-gray-700">5. 今月の売上目標と現在の進捗を入力 (円):</label>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <span class="text-xs text-gray-500 min-w-[60px]">目標金額:</span>
+                            <input
+                                class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:w-32"
+                                id="targetRevenueInput" placeholder="例: 50000" type="number" value="50000" />
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <span class="text-xs text-gray-500 min-w-[60px]">現在の売上:</span>
+                            <input
+                                class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:w-32"
+                                id="currentRevenueInput" placeholder="例: 15000" type="number" value="0" />
+                        </div>
+                        <div class="w-full sm:w-64 bg-gray-100 rounded-full h-5 relative overflow-hidden border"
+                            id="targetProgressContainer">
+                            <div class="bg-[#00C300] h-full transition-all duration-500" id="targetProgressBar"
+                                style="width: 0%"></div>
+                            <span
+                                class="absolute inset-0 flex items-center justify-center text-xs font-black text-gray-700"
+                                id="targetProgressText">0%</span>
+                        </div>
+                        <p class="text-xs font-bold text-gray-600 min-w-[200px]" id="targetMessage"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-[#00C300]">
+                <p class="text-xs text-gray-500 font-bold">総収益 (分配金総額)</p>
+                <p class="text-xl md:text-2xl font-black text-gray-800 mt-1" id="kpiRevenue">¥0</p>
+                <p class="text-[10px] text-green-600 font-bold mt-1 hidden" id="kpiPremiumRevenue">(うちPremium: ¥0)</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
+                <p class="text-xs text-gray-500 font-bold">期間中累計推定手取り</p>
+                <p class="text-xl md:text-2xl font-black text-blue-600 mt-1" id="kpiNetRevenue">¥0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
+                <p class="text-xs text-gray-500 font-bold" title="ユーザーが購入した総額（※通常販売のみ）">総流通額（ユーザー課金額）</p>
+                <p class="text-xl md:text-2xl font-black text-purple-600 mt-1" id="kpiTotalSalesAmount">¥0</p>
+                <p class="text-[10px] text-purple-400 font-bold mt-1">(※通常販売のみ)</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-green-500">
+                <p class="text-xs text-gray-500 font-bold">総販売数 (件)</p>
+                <p class="text-xl md:text-2xl font-black text-gray-800 mt-1" id="kpiSalesCount">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-yellow-500">
+                <p class="text-xs text-gray-500 font-bold">No.1 売上アイテム</p>
+                <a class="text-sm md:text-base font-bold text-blue-600 hover:text-blue-800 mt-1 truncate block no-underline transition-colors"
+                    href="#" id="kpiTopItem" rel="noopener noreferrer" target="_blank">-</a>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <section class="lg:col-span-2 space-y-3 md:space-y-4">
+                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                    <h2 class="text-base md:text-lg font-black text-gray-700">📊 全体状況</h2>
+                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">まず「今どれくらい売れているか」を確認</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:gap-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">📅 月別収益推移</h2>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                    onclick="downloadChart('monthlyChart', '月別収益推移')">
+                                    📥 画像保存
+                                </button>
+                                <select
+                                    class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]"
+                                    id="monthlyCategorySelect">
+                                    <option value="ALL">すべてのカテゴリ (積み上げ)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mb-4 text-xs font-bold text-gray-600 hidden"
+                            id="monthlyAverageContainer">
+                        </div>
+                        <div class="monthly-chart-container overflow-x-auto" id="monthlyChartScroll">
+                            <div id="monthlyChartInner" style="min-width: 760px; height: 100%;">
+                                <canvas id="monthlyChart"></canvas>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-2 md:hidden">※スマホではグラフを左右にスクロールして全ての数字を確認できます。</p>
+                    </div>
+                </div>
+            </section>
+            <section class="lg:col-span-2 space-y-3 md:space-y-4">
+                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                    <h2 class="text-base md:text-lg font-black text-gray-700">🚀 変化・売上構造</h2>
+                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">「伸びている作品」と「売上の集中度」を確認</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:gap-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">🚀 前月比 急上昇アイテム (Top 10)</h2>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 md:grid-flow-col md:grid-rows-5 gap-3 md:gap-4"
+                            id="trendArea">
+                            <p class="text-xs text-gray-400">※CSVデータを読み込むと、前月から売上が伸びているアイテムがここに表示されます。</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">⚖️ パレート分析 (ABC分析: 売上依存度の可視化)</h2>
+                            <button
+                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                onclick="downloadChart('paretoChart', 'パレート分析')">
+                                📥 画像保存
                             </button>
-</div>
-<div class="chart-container" style="height: 180px;"><canvas id="stickerTrendChart"></canvas>
-</div>
-</div>
-<div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
-<div class="flex justify-between items-center border-b pb-1 mb-3">
-<h3 class="text-xs font-bold text-gray-600">✨ 絵文字</h3>
-<button class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition" onclick="downloadChart('emojiTrendChart', '絵文字売上推移')">
-                                📥 保存
+                        </div>
+                        <p class="text-xs text-gray-600 mb-2 font-bold" id="paretoComment"></p>
+                        <div class="chart-container" style="height: 350px;"><canvas id="paretoChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+            <section class="lg:col-span-2 space-y-3 md:space-y-4">
+                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                    <h2 class="text-base md:text-lg font-black text-gray-700">🏆 売上ランキング・構成</h2>
+                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">何が売上を作っているのかを比較</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">👑 全体収益ランキング (Top 20) <span
+                                    class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span>
+                            </h2>
+                            <button
+                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                onclick="downloadChart('itemChart', '全体収益ランキング')">
+                                📥 画像保存
                             </button>
-</div>
-<div class="chart-container" style="height: 180px;"><canvas id="emojiTrendChart"></canvas></div>
-</div>
-<div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
-<div class="flex justify-between items-center border-b pb-1 mb-3">
-<h3 class="text-xs font-bold text-gray-600">👗 着せかえ</h3>
-<button class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition" onclick="downloadChart('themeTrendChart', '着せかえ売上推移')">
-                                📥 保存
+                        </div>
+                        <div class="chart-container" style="height: 500px;"><canvas id="itemChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">🛍️ 全体販売数ランキング (Top 20) <span
+                                    class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span>
+                            </h2>
+                            <button
+                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                onclick="downloadChart('salesCountChart', '全体販売数ランキング')">
+                                📥 画像保存
                             </button>
-</div>
-<div class="chart-container" style="height: 180px;"><canvas id="themeTrendChart"></canvas></div>
-</div>
-</div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">🏆 カテゴリ別 売上ランキング (Top 20) <span class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
-<div class="flex items-center gap-3">
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('categoryRankChart', 'カテゴリ別売上ランキング_' + document.getElementById('categoryRankSelect').value)">
-                            📥 画像保存
-                        </button>
-<select class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]" id="categoryRankSelect">
-</select>
-</div>
-</div>
-<div class="chart-container" style="height: 500px;"><canvas id="categoryRankChart"></canvas></div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 space-y-4">
-<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2">
-<h2 class="text-sm md:text-base font-bold text-gray-700 flex items-center gap-1">
-                        🏆 月別 人気ランキング (Top 20) <span class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span>
-</h2>
-<div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-<span class="text-xs font-bold text-gray-500 whitespace-nowrap">表示月:</span>
-<select class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]" id="monthlyRankMonthSelect">
-</select>
-</div>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-<div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
-<div class="flex justify-between items-center border-b pb-1 mb-3">
-<h3 class="text-xs font-bold text-gray-600">🎨 スタンプ</h3>
-<button class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition" onclick="downloadChart('monthlyStickerRankChart', '月別スタンプランキング_' + document.getElementById('monthlyRankMonthSelect').value)">
-                                📥 保存
+                        </div>
+                        <div class="chart-container" style="height: 500px;"><canvas id="salesCountChart"></canvas></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:col-span-2">
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                            <div class="flex justify-between items-center border-b pb-2 mb-4">
+                                <h2 class="text-xs md:text-sm font-bold text-gray-700">🌍 販売国シェア</h2>
+                                <button
+                                    class="text-xs font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                    onclick="downloadChart('countryChart', '販売国シェア')">
+                                    📥 保存
+                                </button>
+                            </div>
+                            <div class="chart-container" style="height: 300px;"><canvas id="countryChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                            <div class="flex justify-between items-center border-b pb-2 mb-4">
+                                <h2 class="text-xs md:text-sm font-bold text-gray-700">🎨 種類シェア</h2>
+                                <button
+                                    class="text-xs font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                    onclick="downloadChart('typeChart', '種類別シェア')">
+                                    📥 保存
+                                </button>
+                            </div>
+                            <div class="chart-container" style="height: 300px;"><canvas id="typeChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">📊 カテゴリ別 総売上比較</h2>
+                            <button
+                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                onclick="downloadChart('categorySummaryChart', 'カテゴリ別総売上比較')">
+                                📥 画像保存
                             </button>
-</div>
-<div class="chart-container" style="height: 450px;"><canvas id="monthlyStickerRankChart"></canvas></div>
-</div>
-<div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
-<div class="flex justify-between items-center border-b pb-1 mb-3">
-<h3 class="text-xs font-bold text-gray-600">✨ 絵文字</h3>
-<button class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition" onclick="downloadChart('monthlyEmojiRankChart', '月別絵文字ランキング_' + document.getElementById('monthlyRankMonthSelect').value)">
-                                📥 保存
+                        </div>
+                        <div class="chart-container" style="height: 180px;"><canvas id="categorySummaryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="lg:col-span-2 space-y-3 md:space-y-4">
+                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                    <h2 class="text-base md:text-lg font-black text-gray-700">🌍 市場・国別分析</h2>
+                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">どの国で、どのくらいの売上・手取りが発生しているかを確認</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:gap-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">📊 国別 売上ランキング</h2>
+                            <button
+                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                onclick="downloadChart('countryRankChart', '国別売上ランキング')">
+                                📥 画像保存
                             </button>
-</div>
-<div class="chart-container" style="height: 450px;"><canvas id="monthlyEmojiRankChart"></canvas>
-</div>
-</div>
-<div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
-<div class="flex justify-between items-center border-b pb-1 mb-3">
-<h3 class="text-xs font-bold text-gray-600">👗 着せかえ</h3>
-<button class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition" onclick="downloadChart('monthlyThemeRankChart', '月別着せかえランキング_' + document.getElementById('monthlyRankMonthSelect').value)">
-                                📥 保存
+                        </div>
+                        <div class="chart-container"><canvas id="countryRankChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">💸 国別の「実質手取り率（利益率）」比較</h2>
+                            <button
+                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                onclick="downloadChart('countryProfitRateChart', '国別実質手取り率')">
+                                📥 画像保存
                             </button>
-</div>
-<div class="chart-container" style="height: 450px;"><canvas id="monthlyThemeRankChart"></canvas>
-</div>
-</div>
-</div>
-</div><div class="hidden md:block bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">⏳ アイテムのライフサイクル（リリースからの売上推移）Top10</h2>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('lifecycleChart', 'ライフサイクル分析')">
-                        📥 画像保存
-                    </button>
-</div>
-<p class="text-xs text-gray-500 mb-2">※データが存在する月を「リリース月（経過月1）」として起算し、その後の売上推移を比較します。</p>
-<div class="chart-container overflow-x-auto" id="lifecycleChartScroll" style="height: 500px;">
-<div id="lifecycleChartInner" style="min-width: 900px; height: 100%;">
-<canvas id="lifecycleChart"></canvas>
-</div>
-</div>
-<p class="text-[10px] text-gray-400 mt-2 md:hidden">※スマホではグラフを左右にスクロールできます。</p>
-</div></div></section><section class="lg:col-span-2 space-y-3 md:space-y-4"><div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3"><h2 class="text-base md:text-lg font-black text-gray-700">🎯 個別作品・運用分析</h2><p class="text-[10px] md:text-xs text-gray-400 pb-0.5">気になる作品を追跡し、指定月や休眠作品まで掘り下げる</p></div><div class="grid grid-cols-1 gap-4 md:gap-6"><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">🎯 特定アイテムの売上推移 (ウォッチリスト)</h2>
-<div class="flex items-center gap-3">
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('itemTrackChart', '特定アイテム売上推移_' + document.getElementById('itemTrackSelect').value)">
-                            📥 画像保存
-                        </button>
-<select class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300] max-w-[180px] sm:max-w-xs truncate" id="itemTrackSelect">
-</select>
-</div>
-</div>
-<div class="chart-container"><canvas id="itemTrackChart"></canvas></div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 class="text-sm md:text-base font-bold text-gray-700">📜 特定アイテムの詳細売上履歴 (全期間 / 年別)</h2>
-<div class="flex items-center gap-3">
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('itemDetailTrackChart', '特定アイテム年別売上_' + document.getElementById('itemTrackSelect').value + '_' + document.getElementById('itemDetailYearSelect').value)">
-                            📥 画像保存
-                        </button>
-<select class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]" id="itemDetailYearSelect">
-<option value="ALL">すべての年</option>
-</select>
-</div>
-</div>
-<div class="chart-container" id="itemDetailTrackChartContainer" style="min-height: 300px; height: auto;">
-<canvas id="itemDetailTrackChart"></canvas>
-</div>
-</div><div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h2 id="targetMonthRankTitle" class="text-sm md:text-base font-bold text-gray-700">🗓️ 指定月の売上総合ランキング (Top 10) <span class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span></h2>
-<div class="flex items-center gap-3">
-<button id="targetMonthRankExpandBtn" type="button"
-class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition whitespace-nowrap"
-onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
-<button class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition" onclick="downloadChart('targetMonthRankChart', '指定月総合ランキング_' + document.getElementById('targetMonthRankSelect').value)">
-                            📥 画像保存
-                        </button>
-<select class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]" id="targetMonthRankSelect">
-</select>
-</div>
-</div>
-<div class="chart-container"><canvas id="targetMonthRankChart"></canvas></div>
-</div><div class="bg-gray-50 p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<h2 class="text-sm md:text-base font-bold mb-4 text-gray-700 border-b pb-2 flex items-center gap-2">
-                    💤 期間内 休眠（未売上）アイテムリスト
-                </h2>
-<div class="text-sm text-gray-600 leading-relaxed max-h-48 overflow-y-auto" id="dormantItemArea">
-<p class="text-gray-400">
-                        ※売上CSVと「マスターデータCSV」の両方を読み込むと、選択期間内に一度も売れなかったアイテムがここに表示されます。SNSでの再告知などの参考にしてください。</p>
-</div>
-</div></div></section><section class="lg:col-span-2 space-y-3 md:space-y-4"><div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3"><h2 class="text-base md:text-lg font-black text-gray-700">🌟 Premium（定額制）分析</h2><p class="text-[10px] md:text-xs text-gray-400 pb-0.5">通常販売とは別に、Premiumがどの作品・カテゴリを支えているかを確認</p></div><div class="grid grid-cols-1 gap-4 md:gap-6"><div class="bg-yellow-50 p-4 md:p-6 rounded-xl shadow-sm border border-yellow-200 lg:col-span-2 space-y-4">
-<h2 class="text-sm md:text-base font-bold text-yellow-800 border-b border-yellow-200 pb-2 flex items-center gap-2">
-                    🌟 Premium (定額制) 詳細分析
-                </h2>
-<!-- 累計分析 -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h3 class="text-xs md:text-sm font-bold text-gray-700">🍩 収益依存度 (通常 vs Premium)</h3>
-<button class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition" onclick="downloadChart('premiumRatioChart', 'Premium収益依存度')">📥
-                                保存</button>
-</div>
-<div class="chart-container" style="height: 250px;"><canvas id="premiumRatioChart"></canvas>
-</div>
-<div class="mt-2 grid grid-cols-2 gap-2 text-xs" id="premiumRatioSummary"></div>
-</div>
-<div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h3 class="text-xs md:text-sm font-bold text-gray-700">🎨 カテゴリ別 比率 (Premium累計)</h3>
-<button class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition" onclick="downloadChart('premiumCategoryChart', 'Premiumカテゴリ比率')">📥
-                                保存</button>
-</div>
-<div class="chart-container" style="height: 250px;"><canvas id="premiumCategoryChart"></canvas>
-</div>
-</div>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h3 class="text-xs md:text-sm font-bold text-gray-700">📈 月別 Premium分配金推移</h3>
-<button class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition" onclick="downloadChart('premiumTrendChart', 'Premium月別推移')">📥
-                                保存</button>
-</div>
-<div class="chart-container" style="height: 300px;"><canvas id="premiumTrendChart"></canvas>
-</div>
-</div>
-<div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h3 class="text-xs md:text-sm font-bold text-gray-700">👑 Premium分配金ランキング (累計 Top 20)</h3>
-<button class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition" onclick="downloadChart('premiumItemRankChart', 'Premium分配金ランキング')">📥
-                                保存</button>
-</div>
-<div class="chart-container" style="height: 300px;"><canvas id="premiumItemRankChart"></canvas>
-</div>
-</div>
-</div>
-<!-- ▼▼ 新設：指定月ごとの詳細分析 ▼▼ -->
-<div class="mt-8 border-t border-yellow-200 pt-6">
-<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-yellow-200 pb-2 mb-4 gap-2">
-<h3 class="text-sm md:text-base font-bold text-yellow-800 flex items-center gap-1">
-                            📅 指定月 Premium 詳細分析
-                        </h3>
-<div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-<span class="text-xs font-bold text-gray-500 whitespace-nowrap">表示月:</span>
-<select class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-yellow-500 focus:border-yellow-500" id="premiumTargetMonthSelect">
-</select>
-</div>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h4 class="text-xs md:text-sm font-bold text-gray-700">🎨 指定月 カテゴリ比率 (Premium)</h4>
-<button class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition" onclick="downloadChart('premiumTargetCategoryChart', '指定月Premiumカテゴリ比率_' + document.getElementById('premiumTargetMonthSelect').value)">📥
-                                    保存</button>
-</div>
-<div class="chart-container" style="height: 250px;"><canvas id="premiumTargetCategoryChart"></canvas></div>
-</div>
-<div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
-<div class="flex justify-between items-center border-b pb-2 mb-4">
-<h4 class="text-xs md:text-sm font-bold text-gray-700">👑 指定月 Premium分配金ランキング (Top 10)</h4>
-<button class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition" onclick="downloadChart('premiumTargetItemRankChart', '指定月Premium分配金ランキング_' + document.getElementById('premiumTargetMonthSelect').value)">📥
-                                    保存</button>
-</div>
-<div class="chart-container" style="height: 250px;"><canvas id="premiumTargetItemRankChart"></canvas></div>
-</div>
-</div>
-</div>
-<!-- ▲▲ 新設ブロックおわり ▲▲ -->
-</div><div class="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
-<!-- 1. Premium救済アイテム -->
-<div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm h-full min-h-[520px] flex flex-col">
-<div class="flex justify-between items-center border-b pb-2 mb-3">
-<div>
-<h3 class="text-xs md:text-sm font-bold text-gray-700">🎁 Premiumに救済された「底力」アイテム</h3>
-<p class="text-[10px] text-gray-500 mt-1">
-                                プレミアム入りした期間中、通常販売で個別売上がないのにPremium分配金が発生したアイテム
-                            </p>
-</div>
-<span class="text-xs font-black text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full whitespace-nowrap" id="premiumRescuedCount">0件</span>
-</div>
-<div class="flex-1 min-h-0 overflow-y-auto" id="premiumRescuedItemsArea">
-<p class="text-xs text-gray-400">※CSVを読み込むと表示されます。</p>
-</div>
-</div>
-<!-- 2. アイテム別Premium依存度 -->
-<div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm h-full min-h-[520px] flex flex-col">
-<div class="flex justify-between items-center border-b pb-2 mb-3">
-<div>
-<h3 class="text-xs md:text-sm font-bold text-gray-700">⚖️ アイテム別「サブスク相性（Premium依存度）」</h3>
-<p class="text-[10px] text-gray-500 mt-1">
-                                プレミアム入りした作品だけを対象に、総収益に占める通常販売とPremiumの構成比を表示
-                            </p>
-</div>
-<button class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition whitespace-nowrap" onclick="downloadChart('premiumDependencyChart', 'アイテム別Premium依存度')">
-                            📥 保存
-                        </button>
-</div>
-<div class="relative overflow-hidden flex-1 min-h-0" id="premiumDependencyChartContainer" style="height: 100%; min-height: 360px;">
-<div class="w-full h-full" id="premiumDependencyChartInner">
-<canvas id="premiumDependencyChart"></canvas>
-</div>
-</div>
-</div>
-<!-- 3. Premiumカテゴリ月次トレンド -->
-<div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm lg:col-span-2">
-<div class="flex justify-between items-center border-b pb-2 mb-3">
-<div>
-<h3 class="text-xs md:text-sm font-bold text-gray-700">📈 Premium収益 カテゴリ別「月次トレンド」</h3>
-<p class="text-[10px] text-gray-500 mt-1">
-                                Premium分配金をスタンプ・絵文字・着せかえ別に積み上げ表示
-                            </p>
-</div>
-<button class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition whitespace-nowrap" onclick="downloadChart('premiumCategoryTrendChart', 'Premiumカテゴリ別月次トレンド')">
-                            📥 保存
-                        </button>
-</div>
-<div class="chart-container" style="height: 340px;">
-<canvas id="premiumCategoryTrendChart"></canvas>
-</div>
-<div class="mt-3 overflow-x-auto" id="premiumCategoryTrendSummary"></div>
-</div>
-</div></div></section><section class="lg:col-span-2 space-y-3 md:space-y-4"><div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3"><h2 class="text-base md:text-lg font-black text-gray-700">🤖 総合AI分析</h2><p class="text-[10px] md:text-xs text-gray-400 pb-0.5">ここまでの集計結果を最後にまとめて確認</p></div><div class="grid grid-cols-1 gap-4 md:gap-6"><div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-<h2 class="text-sm md:text-base font-bold mb-4 text-gray-700 border-b pb-2 flex items-center gap-2">
-                    🤖 AI 売上簡易分析レポート
-                </h2>
-<div class="text-sm text-gray-600 leading-relaxed" id="aiAnalysisComment">
-<p class="text-gray-400">※CSVファイルを読み込むと、ここにデータの集計結果に基づいた簡易分析レポートが自動生成されます。</p>
-</div>
-</div></div></section></div>
-</main>
-<footer class="max-w-6xl mx-auto px-4 py-6 text-xs text-gray-400 border-t border-gray-100 mt-12 flex flex-col sm:flex-row justify-end items-center sm:items-end gap-2">
-<p class="leading-none pb-0.5">© 2026 <a class="text-[#00C300] hover:text-[#009900] transition font-bold no-underline" href="https://store.line.me/search/ja?q=arakakiai" rel="noopener noreferrer" target="_blank">ARAKAKIAIworks</a>. All
+                        </div>
+                        <p class="text-xs text-gray-500 mb-2">※(分配金 / ユーザー課金額) × 100
+                            で算出。税金等の影響で国ごとに異なります。(※データ件数が少ない国は除外)</p>
+                        <div class="chart-container" style="height: 250px;"><canvas
+                                id="countryProfitRateChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">🗺️ 国別詳細 アイテムランキング (Top 20) <span
+                                    class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span>
+                            </h2>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                    onclick="downloadChart('countryItemRankChart', '国別詳細アイテムランキング_' + document.getElementById('countryItemRankSelect').value)">
+                                    📥 画像保存
+                                </button>
+                                <select
+                                    class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]"
+                                    id="countryItemRankSelect">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="height: 500px;"><canvas id="countryItemRankChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">🇯🇵 国内 vs 🌍 海外 売上推移</h2>
+                            <button
+                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                onclick="downloadChart('jpVsOverseasChart', '国内_海外_売上推移')">
+                                📥 画像保存
+                            </button>
+                        </div>
+                        <div class="chart-container"><canvas id="jpVsOverseasChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">🌍 直近半年のカテゴリ比率 (海外限定)</h2>
+                            <button
+                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                onclick="downloadChart('overseasCategoryRatioChart', '海外限定_カテゴリ比率')">
+                                📥 画像保存
+                            </button>
+                        </div>
+                        <div class="chart-container" style="height: 300px;"><canvas
+                                id="overseasCategoryRatioChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="lg:col-span-2 space-y-3 md:space-y-4">
+                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                    <h2 class="text-base md:text-lg font-black text-gray-700">📈 カテゴリ・時系列分析</h2>
+                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">カテゴリの推移、月別人気、作品のライフサイクルを確認</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:gap-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 space-y-4">
+                        <div
+                            class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700 flex items-center gap-1">
+                                📊 カテゴリ別 売上推移
+                            </h2>
+                            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                <span class="text-xs font-bold text-gray-500 whitespace-nowrap">表示国:</span>
+                                <select
+                                    class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]"
+                                    id="categoryTrendCountrySelect">
+                                    <option value="ALL">すべての国 (全国)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <div class="flex justify-between items-center border-b pb-1 mb-3">
+                                    <h3 class="text-xs font-bold text-gray-600">🎨 スタンプ</h3>
+                                    <button
+                                        class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                        onclick="downloadChart('stickerTrendChart', 'スタンプ売上推移')">
+                                        📥 保存
+                                    </button>
+                                </div>
+                                <div class="chart-container" style="height: 180px;"><canvas
+                                        id="stickerTrendChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <div class="flex justify-between items-center border-b pb-1 mb-3">
+                                    <h3 class="text-xs font-bold text-gray-600">✨ 絵文字</h3>
+                                    <button
+                                        class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                        onclick="downloadChart('emojiTrendChart', '絵文字売上推移')">
+                                        📥 保存
+                                    </button>
+                                </div>
+                                <div class="chart-container" style="height: 180px;"><canvas
+                                        id="emojiTrendChart"></canvas></div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <div class="flex justify-between items-center border-b pb-1 mb-3">
+                                    <h3 class="text-xs font-bold text-gray-600">👗 着せかえ</h3>
+                                    <button
+                                        class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                        onclick="downloadChart('themeTrendChart', '着せかえ売上推移')">
+                                        📥 保存
+                                    </button>
+                                </div>
+                                <div class="chart-container" style="height: 180px;"><canvas
+                                        id="themeTrendChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">🏆 カテゴリ別 売上ランキング (Top 20) <span
+                                    class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span>
+                            </h2>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                    onclick="downloadChart('categoryRankChart', 'カテゴリ別売上ランキング_' + document.getElementById('categoryRankSelect').value)">
+                                    📥 画像保存
+                                </button>
+                                <select
+                                    class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]"
+                                    id="categoryRankSelect">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="height: 500px;"><canvas id="categoryRankChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 space-y-4">
+                        <div
+                            class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700 flex items-center gap-1">
+                                🏆 月別 人気ランキング (Top 20) <span
+                                    class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span>
+                            </h2>
+                            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                <span class="text-xs font-bold text-gray-500 whitespace-nowrap">表示月:</span>
+                                <select
+                                    class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]"
+                                    id="monthlyRankMonthSelect">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <div class="flex justify-between items-center border-b pb-1 mb-3">
+                                    <h3 class="text-xs font-bold text-gray-600">🎨 スタンプ</h3>
+                                    <button
+                                        class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                        onclick="downloadChart('monthlyStickerRankChart', '月別スタンプランキング_' + document.getElementById('monthlyRankMonthSelect').value)">
+                                        📥 保存
+                                    </button>
+                                </div>
+                                <div class="chart-container" style="height: 450px;"><canvas
+                                        id="monthlyStickerRankChart"></canvas></div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <div class="flex justify-between items-center border-b pb-1 mb-3">
+                                    <h3 class="text-xs font-bold text-gray-600">✨ 絵文字</h3>
+                                    <button
+                                        class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                        onclick="downloadChart('monthlyEmojiRankChart', '月別絵文字ランキング_' + document.getElementById('monthlyRankMonthSelect').value)">
+                                        📥 保存
+                                    </button>
+                                </div>
+                                <div class="chart-container" style="height: 450px;"><canvas
+                                        id="monthlyEmojiRankChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <div class="flex justify-between items-center border-b pb-1 mb-3">
+                                    <h3 class="text-xs font-bold text-gray-600">👗 着せかえ</h3>
+                                    <button
+                                        class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                        onclick="downloadChart('monthlyThemeRankChart', '月別着せかえランキング_' + document.getElementById('monthlyRankMonthSelect').value)">
+                                        📥 保存
+                                    </button>
+                                </div>
+                                <div class="chart-container" style="height: 450px;"><canvas
+                                        id="monthlyThemeRankChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hidden md:block bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">⏳ アイテムのライフサイクル（リリースからの売上推移）Top10
+                            </h2>
+                            <button
+                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                onclick="downloadChart('lifecycleChart', 'ライフサイクル分析')">
+                                📥 画像保存
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-2">※データが存在する月を「リリース月（経過月1）」として起算し、その後の売上推移を比較します。</p>
+                        <div class="chart-container overflow-x-auto" id="lifecycleChartScroll" style="height: 500px;">
+                            <div id="lifecycleChartInner" style="min-width: 900px; height: 100%;">
+                                <canvas id="lifecycleChart"></canvas>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-2 md:hidden">※スマホではグラフを左右にスクロールできます。</p>
+                    </div>
+                </div>
+            </section>
+            <section class="lg:col-span-2 space-y-3 md:space-y-4">
+                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                    <h2 class="text-base md:text-lg font-black text-gray-700">🎯 個別作品・運用分析</h2>
+                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">気になる作品を追跡し、指定月や休眠作品まで掘り下げる</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:gap-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">🎯 特定アイテムの売上推移 (ウォッチリスト)</h2>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                    onclick="downloadChart('itemTrackChart', '特定アイテム売上推移_' + document.getElementById('itemTrackSelect').value)">
+                                    📥 画像保存
+                                </button>
+                                <select
+                                    class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300] max-w-[180px] sm:max-w-xs truncate"
+                                    id="itemTrackSelect">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container"><canvas id="itemTrackChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-sm md:text-base font-bold text-gray-700">📜 特定アイテムの詳細売上履歴 (全期間 / 年別)</h2>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                    onclick="downloadChart('itemDetailTrackChart', '特定アイテム年別売上_' + document.getElementById('itemTrackSelect').value + '_' + document.getElementById('itemDetailYearSelect').value)">
+                                    📥 画像保存
+                                </button>
+                                <select
+                                    class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]"
+                                    id="itemDetailYearSelect">
+                                    <option value="ALL">すべての年</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container" id="itemDetailTrackChartContainer"
+                            style="min-height: 300px; height: auto;">
+                            <canvas id="itemDetailTrackChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 id="targetMonthRankTitle" class="text-sm md:text-base font-bold text-gray-700">🗓️
+                                指定月の売上総合ランキング (Top 10) <span
+                                    class="text-[10px] text-gray-400 font-normal ml-2 hidden sm:inline">※棒をクリックでストアへ</span>
+                            </h2>
+                            <div class="flex items-center gap-3">
+                                <button id="targetMonthRankExpandBtn" type="button"
+                                    class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition whitespace-nowrap"
+                                    onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
+                                <button
+                                    class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                    onclick="downloadChart('targetMonthRankChart', '指定月総合ランキング_' + document.getElementById('targetMonthRankSelect').value)">
+                                    📥 画像保存
+                                </button>
+                                <select
+                                    class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]"
+                                    id="targetMonthRankSelect">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container"><canvas id="targetMonthRankChart"></canvas></div>
+                    </div>
+                    <div class="bg-gray-50 p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <h2
+                            class="text-sm md:text-base font-bold mb-4 text-gray-700 border-b pb-2 flex items-center gap-2">
+                            💤 期間内 休眠（未売上）アイテムリスト
+                        </h2>
+                        <div class="text-sm text-gray-600 leading-relaxed max-h-48 overflow-y-auto"
+                            id="dormantItemArea">
+                            <p class="text-gray-400">
+                                ※売上CSVと「マスターデータCSV」の両方を読み込むと、選択期間内に一度も売れなかったアイテムがここに表示されます。SNSでの再告知などの参考にしてください。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="lg:col-span-2 space-y-3 md:space-y-4">
+                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                    <h2 class="text-base md:text-lg font-black text-gray-700">🌟 Premium（定額制）分析</h2>
+                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">通常販売とは別に、Premiumがどの作品・カテゴリを支えているかを確認</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:gap-6">
+                    <div
+                        class="bg-yellow-50 p-4 md:p-6 rounded-xl shadow-sm border border-yellow-200 lg:col-span-2 space-y-4">
+                        <h2
+                            class="text-sm md:text-base font-bold text-yellow-800 border-b border-yellow-200 pb-2 flex items-center gap-2">
+                            🌟 Premium (定額制) 詳細分析
+                        </h2>
+                        <!-- 累計分析 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                                <div class="flex justify-between items-center border-b pb-2 mb-4">
+                                    <h3 class="text-xs md:text-sm font-bold text-gray-700">🍩 収益依存度 (通常 vs Premium)</h3>
+                                    <button
+                                        class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition"
+                                        onclick="downloadChart('premiumRatioChart', 'Premium収益依存度')">📥
+                                        保存</button>
+                                </div>
+                                <div class="chart-container" style="height: 250px;"><canvas
+                                        id="premiumRatioChart"></canvas>
+                                </div>
+                                <div class="mt-2 grid grid-cols-2 gap-2 text-xs" id="premiumRatioSummary"></div>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                                <div class="flex justify-between items-center border-b pb-2 mb-4">
+                                    <h3 class="text-xs md:text-sm font-bold text-gray-700">🎨 カテゴリ別 比率 (Premium累計)</h3>
+                                    <button
+                                        class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition"
+                                        onclick="downloadChart('premiumCategoryChart', 'Premiumカテゴリ比率')">📥
+                                        保存</button>
+                                </div>
+                                <div class="chart-container" style="height: 250px;"><canvas
+                                        id="premiumCategoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                                <div class="flex justify-between items-center border-b pb-2 mb-4">
+                                    <h3 class="text-xs md:text-sm font-bold text-gray-700">📈 月別 Premium分配金推移</h3>
+                                    <button
+                                        class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition"
+                                        onclick="downloadChart('premiumTrendChart', 'Premium月別推移')">📥
+                                        保存</button>
+                                </div>
+                                <div class="chart-container" style="height: 300px;"><canvas
+                                        id="premiumTrendChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                                <div class="flex justify-between items-center border-b pb-2 mb-4">
+                                    <h3 class="text-xs md:text-sm font-bold text-gray-700">👑 Premium分配金ランキング (累計 Top
+                                        20)</h3>
+                                    <button
+                                        class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition"
+                                        onclick="downloadChart('premiumItemRankChart', 'Premium分配金ランキング')">📥
+                                        保存</button>
+                                </div>
+                                <div class="chart-container" style="height: 300px;"><canvas
+                                        id="premiumItemRankChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ▼▼ 新設：指定月ごとの詳細分析 ▼▼ -->
+                        <div class="mt-8 border-t border-yellow-200 pt-6">
+                            <div
+                                class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-yellow-200 pb-2 mb-4 gap-2">
+                                <h3 class="text-sm md:text-base font-bold text-yellow-800 flex items-center gap-1">
+                                    📅 指定月 Premium 詳細分析
+                                </h3>
+                                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                    <span class="text-xs font-bold text-gray-500 whitespace-nowrap">表示月:</span>
+                                    <select
+                                        class="p-1.5 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-yellow-500 focus:border-yellow-500"
+                                        id="premiumTargetMonthSelect">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                                    <div class="flex justify-between items-center border-b pb-2 mb-4">
+                                        <h4 class="text-xs md:text-sm font-bold text-gray-700">🎨 指定月 カテゴリ比率 (Premium)
+                                        </h4>
+                                        <button
+                                            class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition"
+                                            onclick="downloadChart('premiumTargetCategoryChart', '指定月Premiumカテゴリ比率_' + document.getElementById('premiumTargetMonthSelect').value)">📥
+                                            保存</button>
+                                    </div>
+                                    <div class="chart-container" style="height: 250px;"><canvas
+                                            id="premiumTargetCategoryChart"></canvas></div>
+                                </div>
+                                <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
+                                    <div class="flex justify-between items-center border-b pb-2 mb-4">
+                                        <h4 class="text-xs md:text-sm font-bold text-gray-700">👑 指定月 Premium分配金ランキング
+                                            (Top 10)</h4>
+                                        <button
+                                            class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition"
+                                            onclick="downloadChart('premiumTargetItemRankChart', '指定月Premium分配金ランキング_' + document.getElementById('premiumTargetMonthSelect').value)">📥
+                                            保存</button>
+                                    </div>
+                                    <div class="chart-container" style="height: 250px;"><canvas
+                                            id="premiumTargetItemRankChart"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ▲▲ 新設ブロックおわり ▲▲ -->
+                    </div>
+                    <div class="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <!-- 1. Premium救済アイテム -->
+                        <div
+                            class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm h-full min-h-[520px] flex flex-col">
+                            <div class="flex justify-between items-center border-b pb-2 mb-3">
+                                <div>
+                                    <h3 class="text-xs md:text-sm font-bold text-gray-700">🎁 Premiumに救済された「底力」アイテム</h3>
+                                    <p class="text-[10px] text-gray-500 mt-1">
+                                        プレミアム入りした期間中、通常販売で個別売上がないのにPremium分配金が発生したアイテム
+                                    </p>
+                                </div>
+                                <span
+                                    class="text-xs font-black text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full whitespace-nowrap"
+                                    id="premiumRescuedCount">0件</span>
+                            </div>
+                            <div class="flex-1 min-h-0 overflow-y-auto" id="premiumRescuedItemsArea">
+                                <p class="text-xs text-gray-400">※CSVを読み込むと表示されます。</p>
+                            </div>
+                        </div>
+                        <!-- 2. アイテム別Premium依存度 -->
+                        <div
+                            class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm h-full min-h-[520px] flex flex-col">
+                            <div class="flex justify-between items-center border-b pb-2 mb-3">
+                                <div>
+                                    <h3 class="text-xs md:text-sm font-bold text-gray-700">⚖️ アイテム別「サブスク相性（Premium依存度）」
+                                    </h3>
+                                    <p class="text-[10px] text-gray-500 mt-1">
+                                        プレミアム入りした作品だけを対象に、総収益に占める通常販売とPremiumの構成比を表示
+                                    </p>
+                                </div>
+                                <button
+                                    class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition whitespace-nowrap"
+                                    onclick="downloadChart('premiumDependencyChart', 'アイテム別Premium依存度')">
+                                    📥 保存
+                                </button>
+                            </div>
+                            <div class="relative overflow-hidden flex-1 min-h-0" id="premiumDependencyChartContainer"
+                                style="height: 100%; min-height: 360px;">
+                                <div class="w-full h-full" id="premiumDependencyChartInner">
+                                    <canvas id="premiumDependencyChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 3. Premiumカテゴリ月次トレンド -->
+                        <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm lg:col-span-2">
+                            <div class="flex justify-between items-center border-b pb-2 mb-3">
+                                <div>
+                                    <h3 class="text-xs md:text-sm font-bold text-gray-700">📈 Premium収益 カテゴリ別「月次トレンド」
+                                    </h3>
+                                    <p class="text-[10px] text-gray-500 mt-1">
+                                        Premium分配金をスタンプ・絵文字・着せかえ別に積み上げ表示
+                                    </p>
+                                </div>
+                                <button
+                                    class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition whitespace-nowrap"
+                                    onclick="downloadChart('premiumCategoryTrendChart', 'Premiumカテゴリ別月次トレンド')">
+                                    📥 保存
+                                </button>
+                            </div>
+                            <div class="chart-container" style="height: 340px;">
+                                <canvas id="premiumCategoryTrendChart"></canvas>
+                            </div>
+                            <div class="mt-3 overflow-x-auto" id="premiumCategoryTrendSummary"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="lg:col-span-2 space-y-3 md:space-y-4">
+                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                    <h2 class="text-base md:text-lg font-black text-gray-700">🤖 総合AI分析</h2>
+                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">ここまでの集計結果を最後にまとめて確認</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:gap-6">
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <h2
+                            class="text-sm md:text-base font-bold mb-4 text-gray-700 border-b pb-2 flex items-center gap-2">
+                            🤖 AI 売上簡易分析レポート
+                        </h2>
+                        <div class="text-sm text-gray-600 leading-relaxed" id="aiAnalysisComment">
+                            <p class="text-gray-400">※CSVファイルを読み込むと、ここにデータの集計結果に基づいた簡易分析レポートが自動生成されます。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+    <footer
+        class="max-w-6xl mx-auto px-4 py-6 text-xs text-gray-400 border-t border-gray-100 mt-12 flex flex-col sm:flex-row justify-end items-center sm:items-end gap-2">
+        <p class="leading-none pb-0.5">© 2026 <a
+                class="text-[#00C300] hover:text-[#009900] transition font-bold no-underline"
+                href="https://store.line.me/search/ja?q=arakakiai" rel="noopener noreferrer"
+                target="_blank">ARAKAKIAIworks</a>. All
             Rights Reserved.<a href="https://note.com/arakakiai_works" target="_blank">🗒️</a></p>
-<img alt="シーサーロゴ" class="h-9 w-auto object-contain block" src="bottom-right.png"/>
-</footer>
-<script>
+        <img alt="シーサーロゴ" class="h-9 w-auto object-contain block" src="bottom-right.png" />
+    </footer>
+    <script>
         let numbersHidden = false;
         let isExpandedView = false; // 全体表示(false) / スクロール拡大表示(true)
 
@@ -783,14 +1041,18 @@ onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
 
         // ★新規追加用変数
         let excludeTitleKeywords = [];
+        let excludeTitleScope = 'normal'; // 'normal'（通常販売のみ） or 'normalPremium'（通常販売＋Premium）
 
         function updateExcludeTitleKeywords() {
             const input = document.getElementById('excludeTitleKeywords');
+            const scopeSelect = document.getElementById('excludeTitleScope');
             if (!input) return;
             excludeTitleKeywords = input.value.split(/[、,\\n]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+            if (scopeSelect) excludeTitleScope = scopeSelect.value;
             const status = document.getElementById('excludeTitleStatus');
             if (excludeTitleKeywords.length) {
-                status.textContent = `除外中：${excludeTitleKeywords.join(' / ')}`;
+                const scopeLabel = excludeTitleScope === 'normalPremium' ? '通常販売＋Premium' : '通常販売のみ';
+                status.textContent = `除外中：${excludeTitleKeywords.join(' / ')}（適用範囲：${scopeLabel}）`;
                 status.classList.remove('hidden');
             } else {
                 status.textContent = '';
@@ -803,11 +1065,28 @@ onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
             return excludeTitleKeywords.some(k => t.includes(k));
         }
 
+        // Country of Sale が premium のデータかどうかを判定（大文字小文字・前後空白を無視）
+        function isPremiumRow(row) {
+            return String(row['Country of Sale'] || '').trim().toLowerCase() === 'premium';
+        }
+
         function getAnalysisData() {
+            // 除外キーワードが未指定の場合は従来通り元データをそのまま返す
             if (!excludeTitleKeywords.length) return globalData;
+
             return globalData.filter(row => {
                 const title = masterDataMap[row['Item ID']] || row['Item Title'] || '';
-                return !isTitleExcluded(title);
+
+                if (!isTitleExcluded(title)) return true;
+
+                // ここに来るのは除外キーワードに一致した行
+                // 「通常販売のみ」が適用範囲の場合、Premium行は除外しない
+                if (excludeTitleScope === 'normal' && isPremiumRow(row)) {
+                    return true;
+                }
+
+                // 「通常販売＋Premium」の場合、または通常販売の行は除外する
+                return false;
             });
         }
 
@@ -999,6 +1278,7 @@ onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
 
         document.addEventListener('DOMContentLoaded', () => {
             const input = document.getElementById('excludeTitleKeywords');
+            const scopeSelect = document.getElementById('excludeTitleScope');
             const applyBtn = document.getElementById('applyExcludeTitleBtn');
             const clearBtn = document.getElementById('clearExcludeTitleBtn');
 
@@ -1008,8 +1288,10 @@ onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
             };
 
             if (applyBtn) applyBtn.addEventListener('click', apply);
+            if (scopeSelect) scopeSelect.addEventListener('change', apply);
             if (clearBtn) clearBtn.addEventListener('click', () => {
                 if (input) input.value = '';
+                if (scopeSelect) scopeSelect.value = 'normal';
                 apply();
             });
             if (input) input.addEventListener('keydown', e => {
@@ -2412,7 +2694,7 @@ onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
             area.innerHTML = rescued.map(item => {
                 const typeJa = item.type === 'Sticker' ? 'スタンプ' :
                     item.type === 'Emoji' ? '絵文字' :
-                    item.type === 'Theme' ? '着せかえ' : item.type;
+                        item.type === 'Theme' ? '着せかえ' : item.type;
 
                 return `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 mb-2 bg-yellow-50 rounded-lg border border-yellow-100">
@@ -2705,11 +2987,11 @@ onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
                         <thead><tr class="border-b border-gray-200 text-gray-500"><th class="text-left p-1.5">月</th>${categories.map(c => `<th class="text-right p-1.5">${ja[c]}</th>`).join('')}<th class="text-right p-1.5">合計</th></tr></thead>
                         <tbody>
                             ${months.map((m, i) => {
-                                const vals = categories.map((c, ci) => datasets[ci].data[i] || 0);
-                                const total = vals.reduce((a,b) => a+b, 0);
-                                const rowBg = i % 2 === 0 ? 'bg-gray-50' : 'bg-white';
-                                return `<tr class="${rowBg} border-b border-gray-100"><td class="p-1.5 font-bold text-gray-700">${m}</td>${vals.map(v => `<td class="p-1.5 text-right font-bold text-gray-700">¥${Math.floor(v).toLocaleString()}</td>`).join('')}<td class="p-1.5 text-right font-black text-gray-800">¥${Math.floor(total).toLocaleString()}</td></tr>`;
-                            }).join('')}
+                    const vals = categories.map((c, ci) => datasets[ci].data[i] || 0);
+                    const total = vals.reduce((a, b) => a + b, 0);
+                    const rowBg = i % 2 === 0 ? 'bg-gray-50' : 'bg-white';
+                    return `<tr class="${rowBg} border-b border-gray-100"><td class="p-1.5 font-bold text-gray-700">${m}</td>${vals.map(v => `<td class="p-1.5 text-right font-bold text-gray-700">¥${Math.floor(v).toLocaleString()}</td>`).join('')}<td class="p-1.5 text-right font-black text-gray-800">¥${Math.floor(total).toLocaleString()}</td></tr>`;
+                }).join('')}
                         </tbody>
                     </table>`;
             }
@@ -3212,65 +3494,67 @@ onclick="toggleTargetMonthRankExpanded()">＋10件表示</button>
         }
     </script>
 
-<!-- 更新履歴 -->
-<section class="max-w-7xl mx-auto px-4 md:px-6 mt-10 mb-8">
-  <details class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <summary class="cursor-pointer select-none px-5 py-4 flex items-center justify-between text-sm font-bold text-gray-700 hover:bg-gray-50">
-      <span>📋 更新履歴</span>
-      <span class="text-xs text-gray-400 font-normal">クリックで開閉</span>
-    </summary>
-    <div class="px-5 pb-5 pt-1 border-t border-gray-100">
-      <div class="space-y-4 text-xs md:text-sm text-gray-600">
+    <!-- 更新履歴 -->
+    <section class="max-w-7xl mx-auto px-4 md:px-6 mt-10 mb-8">
+        <details class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <summary
+                class="cursor-pointer select-none px-5 py-4 flex items-center justify-between text-sm font-bold text-gray-700 hover:bg-gray-50">
+                <span>📋 更新履歴</span>
+                <span class="text-xs text-gray-400 font-normal">クリックで開閉</span>
+            </summary>
+            <div class="px-5 pb-5 pt-1 border-t border-gray-100">
+                <div class="space-y-4 text-xs md:text-sm text-gray-600">
 
-        <div>
-          <div class="font-bold text-gray-800 mb-1">Ver.1.0.5
-  - 「前月比 急上昇アイテム」をTop 5からTop 10へ拡張
-  - PC/タブレットでは2カラム表示に変更し、横長の余白を有効活用
-  - 各カードに「前月→今月・増加額・増加率・販売件数」を表示
-  - スマホでは従来どおり1カラムで表示</div>
-          <ul class="list-disc ml-5 space-y-1">
-            <li>タイトルに指定したキーワードを含む作品を、分析・ランキングから除外できる「タイトル除外フィルター」を追加</li>
-            <li>「あけおめ」「年賀」などの季節作品を除外して、通常作品の売上傾向を確認できるように変更</li>
-          </ul>
-        </div>
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.0.5
+                            - 「前月比 急上昇アイテム」をTop 5からTop 10へ拡張
+                            - PC/タブレットでは2カラム表示に変更し、横長の余白を有効活用
+                            - 各カードに「前月→今月・増加額・増加率・販売件数」を表示
+                            - スマホでは従来どおり1カラムで表示</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>タイトルに指定したキーワードを含む作品を、分析・ランキングから除外できる「タイトル除外フィルター」を追加</li>
+                            <li>「あけおめ」「年賀」などの季節作品を除外して、通常作品の売上傾向を確認できるように変更</li>
+                        </ul>
+                    </div>
 
-        <div>
-          <div class="font-bold text-gray-800 mb-1">Ver.1.0.3</div>
-          <ul class="list-disc ml-5 space-y-1">
-            <li>指定月の売上総合ランキングを、初期Top 10から10件ずつ追加表示できるように変更</li>
-            <li>前月比 急上昇アイテム（Top 5）の表示情報を拡充（前月→今月・増加額・増加率・販売件数）</li>
-            <li>Premium「実利用度ランキング」の名称を「Premium分配金ランキング」に変更</li>
-          </ul>
-        </div>
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.0.3</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>指定月の売上総合ランキングを、初期Top 10から10件ずつ追加表示できるように変更</li>
+                            <li>前月比 急上昇アイテム（Top 5）の表示情報を拡充（前月→今月・増加額・増加率・販売件数）</li>
+                            <li>Premium「実利用度ランキング」の名称を「Premium分配金ランキング」に変更</li>
+                        </ul>
+                    </div>
 
-        <div>
-          <div class="font-bold text-gray-800 mb-1">Ver.1.0.2</div>
-          <ul class="list-disc ml-5 space-y-1">
-            <li>アイテムのライフサイクル Top10をモバイル表示時に自動非表示に変更</li>
-            <li>通常販売／Premium分析の表示・レイアウトを調整</li>
-          </ul>
-        </div>
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.0.2</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>アイテムのライフサイクル Top10をモバイル表示時に自動非表示に変更</li>
+                            <li>通常販売／Premium分析の表示・レイアウトを調整</li>
+                        </ul>
+                    </div>
 
-        <div>
-          <div class="font-bold text-gray-800 mb-1">Ver.1.0.1</div>
-          <ul class="list-disc ml-5 space-y-1">
-            <li>Premium（定額制）分析を追加</li>
-            <li>Premium分配金の月別・累計・指定月ランキングなどの分析項目を整理</li>
-            <li>国コード表示を日本語表記に整理</li>
-          </ul>
-        </div>
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.0.1</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>Premium（定額制）分析を追加</li>
+                            <li>Premium分配金の月別・累計・指定月ランキングなどの分析項目を整理</li>
+                            <li>国コード表示を日本語表記に整理</li>
+                        </ul>
+                    </div>
 
-        <div>
-          <div class="font-bold text-gray-800 mb-1">Ver.1.0.0</div>
-          <ul class="list-disc ml-5 space-y-1">
-            <li>初回リリース</li>
-          </ul>
-        </div>
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.0.0</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>初回リリース</li>
+                        </ul>
+                    </div>
 
-      </div>
-    </div>
-  </details>
-</section>
+                </div>
+            </div>
+        </details>
+    </section>
 
 </body>
+
 </html>
