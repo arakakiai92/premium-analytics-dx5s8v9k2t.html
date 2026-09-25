@@ -111,7 +111,18 @@
                 </div>
             </div>
             <div class="border-t pt-4 mt-2">
-                <label class="block mb-2 text-sm font-bold text-gray-700">6. 除外するタイトルキーワード（任意）:</label>
+                <label class="block mb-2 text-sm font-bold text-gray-700">6. 抽出するタイトルキーワード（任意）:</label>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input id="includeTitleKeywords" type="text"
+                        class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:max-w-md"
+                        placeholder="例：シーサー、ヤンバルクイナ">
+                </div>
+                <p class="text-[10px] md:text-xs text-gray-500 mt-2">
+                    ※タイトルに指定したキーワードを含む作品だけを、分析・ランキングの集計対象にします。複数指定する場合は「、」「,」または改行で区切ってください。空欄の場合は全作品が対象です。下の「適用」ボタンで反映されます。</p>
+                <p id="includeTitleStatus" class="text-xs font-bold text-[#00C300] mt-1 hidden"></p>
+            </div>
+            <div class="border-t pt-4 mt-2">
+                <label class="block mb-2 text-sm font-bold text-gray-700">7. 除外するタイトルキーワード（任意）:</label>
                 <div class="flex flex-col sm:flex-row gap-2">
                     <input id="excludeTitleKeywords" type="text"
                         class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:max-w-md"
@@ -1042,6 +1053,28 @@
         // ★新規追加用変数
         let excludeTitleKeywords = [];
         let excludeTitleScope = 'normal'; // 'normal'（通常販売のみ） or 'normalPremium'（通常販売＋Premium）
+        let includeTitleKeywords = [];
+
+        function updateIncludeTitleKeywords() {
+            const input = document.getElementById('includeTitleKeywords');
+            if (!input) return;
+            includeTitleKeywords = input.value.split(/[、,\\n]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+            const status = document.getElementById('includeTitleStatus');
+            if (!status) return;
+            if (includeTitleKeywords.length) {
+                status.textContent = `抽出中：${includeTitleKeywords.join(' / ')}`;
+                status.classList.remove('hidden');
+            } else {
+                status.textContent = '';
+                status.classList.add('hidden');
+            }
+        }
+
+        function isTitleIncluded(title) {
+            if (!includeTitleKeywords.length) return true;
+            const t = String(title || '').toLowerCase();
+            return includeTitleKeywords.some(k => t.includes(k));
+        }
 
         function updateExcludeTitleKeywords() {
             const input = document.getElementById('excludeTitleKeywords');
@@ -1071,10 +1104,21 @@
         }
 
         function getAnalysisData() {
-            // 除外キーワードが未指定の場合は従来通り元データをそのまま返す
-            if (!excludeTitleKeywords.length) return globalData;
+            // ① 抽出キーワードが指定されている場合、まずそのキーワードを含むタイトルだけに絞り込む
+            //    未指定の場合はglobalDataをそのまま使う（従来動作を維持）
+            let data = globalData;
+            if (includeTitleKeywords.length) {
+                data = data.filter(row => {
+                    const title = masterDataMap[row['Item ID']] || row['Item Title'] || '';
+                    return isTitleIncluded(title);
+                });
+            }
 
-            return globalData.filter(row => {
+            // ② 除外キーワードが未指定の場合は、①までの結果をそのまま返す
+            //    （抽出・除外どちらも未指定なら、従来通りglobalDataをそのまま返す）
+            if (!excludeTitleKeywords.length) return data;
+
+            return data.filter(row => {
                 const title = masterDataMap[row['Item ID']] || row['Item Title'] || '';
 
                 if (!isTitleExcluded(title)) return true;
@@ -1281,8 +1325,10 @@
             const scopeSelect = document.getElementById('excludeTitleScope');
             const applyBtn = document.getElementById('applyExcludeTitleBtn');
             const clearBtn = document.getElementById('clearExcludeTitleBtn');
+            const includeInput = document.getElementById('includeTitleKeywords');
 
             const apply = () => {
+                updateIncludeTitleKeywords();
                 updateExcludeTitleKeywords();
                 if (globalData.length > 0) renderDashboard();
             };
@@ -1292,9 +1338,16 @@
             if (clearBtn) clearBtn.addEventListener('click', () => {
                 if (input) input.value = '';
                 if (scopeSelect) scopeSelect.value = 'normal';
+                if (includeInput) includeInput.value = '';
                 apply();
             });
             if (input) input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    apply();
+                }
+            });
+            if (includeInput) includeInput.addEventListener('keydown', e => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     apply();
