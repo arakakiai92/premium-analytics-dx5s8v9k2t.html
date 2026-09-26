@@ -77,6 +77,22 @@
         </div>
     </header>
     <main class="p-4 max-w-6xl mx-auto space-y-6">
+        <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex flex-wrap gap-2" id="analysisModeContainer">
+                <button
+                    class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-[#00C300] text-white"
+                    data-mode="all" type="button">📊 総合</button>
+                <button
+                    class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    data-mode="normal" type="button">🛍️ 通常販売</button>
+                <button
+                    class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    data-mode="premium" type="button">🌟 Premium</button>
+            </div>
+            <p class="text-[10px] md:text-xs text-gray-500 mt-2">
+                ※ボタンで表示する分析ページ（総合／通常販売／Premium）を切り替えます。下の「🔎 タイトル分析フィルター」は、選択中のページの中でそのまま機能します。
+            </p>
+        </div>
         <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 relative">
             <div class="hidden absolute top-4 right-4 flex items-center gap-3" id="cacheStatusArea">
                 <span class="bg-green-100 text-green-800 text-[10px] md:text-xs font-bold px-2 py-1 rounded shadow-sm">
@@ -111,20 +127,7 @@
                 </div>
             </div>
             <div class="border-t pt-4 mt-2">
-                <label class="block mb-2 text-sm font-bold text-gray-700">6. 分析対象 ＆ タイトル分析フィルター（任意）:</label>
-
-                <div class="mb-4">
-                    <p class="text-xs font-bold text-gray-600 mb-2">分析対象</p>
-                    <div class="flex flex-wrap gap-2" id="analysisModeContainer">
-                        <button class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-[#00C300] text-white"
-                            data-mode="all" type="button">📊 総合</button>
-                        <button class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            data-mode="normal" type="button">🛍️ 通常販売</button>
-                        <button class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            data-mode="premium" type="button">🌟 Premium</button>
-                    </div>
-                    <p class="text-[10px] md:text-xs text-gray-500 mt-2">※「総合」は通常販売＋Premium、「通常販売」はPremiumを除いたデータ、「Premium」はPremiumデータのみを分析対象にします。下のフィルターは、この分析対象の中でそのまま機能します。</p>
-                </div>
+                <label class="block mb-2 text-sm font-bold text-gray-700">6. タイトル分析フィルター（任意）:</label>
 
                 <div class="border-t pt-4">
                     <p class="text-sm font-bold text-gray-700 mb-3">🔎 タイトル分析フィルター</p>
@@ -159,7 +162,8 @@
                     </div>
 
                     <p class="text-[10px] md:text-xs text-gray-500 mt-2">
-                        ※「抽出」はキーワードを含む作品だけを、「除外」はキーワードを含む作品を分析対象から外します。どちらも複数指定する場合は「、」「,」または改行で区切ってください。除外の「適用範囲」で、Premiumデータも除外するかを選べます。抽出・除外とも空欄なら全作品が対象です。</p>
+                        ※「抽出」はキーワードを含む作品だけを、「除外」はキーワードを含む作品を分析対象から外します。どちらも複数指定する場合は「、」「,」または改行で区切ってください。除外の「適用範囲」で、Premiumデータも除外するかを選べます。抽出・除外とも空欄なら全作品が対象です。
+                    </p>
 
                     <p id="includeTitleStatus" class="text-xs font-bold text-[#00C300] mt-2 hidden"></p>
                     <p id="excludeTitleStatus" class="text-xs font-bold text-[#00C300] mt-1 hidden"></p>
@@ -204,6 +208,7 @@
                 </div>
             </div>
         </div>
+        <div id="page-overview">
         <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-[#00C300]">
                 <p class="text-xs text-gray-500 font-bold">総収益 (分配金総額)</p>
@@ -264,6 +269,48 @@
                     </div>
                 </div>
             </section>
+            <section class="lg:col-span-2 space-y-3 md:space-y-4">
+                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                    <h2 class="text-base md:text-lg font-black text-gray-700">🍩 通常販売 vs Premium 収益依存度</h2>
+                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">全体の収益がどれくらいPremiumに依存しているかを確認</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:gap-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h3 class="text-xs md:text-sm font-bold text-gray-700">🍩 収益依存度 (通常 vs Premium)</h3>
+                            <button
+                                class="text-[10px] font-bold text-[#00C300] hover:text-[#009900] active:scale-95 transition"
+                                onclick="downloadChart('premiumRatioChart', 'Premium収益依存度')">📥
+                                保存</button>
+                        </div>
+                        <div class="chart-container" style="height: 250px;"><canvas
+                                id="premiumRatioChart"></canvas>
+                        </div>
+                        <div class="mt-2 grid grid-cols-2 gap-2 text-xs" id="premiumRatioSummary"></div>
+                    </div>
+                </div>
+            </section>
+            <section class="lg:col-span-2 space-y-3 md:space-y-4">
+                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                    <h2 class="text-base md:text-lg font-black text-gray-700">🤖 総合AI分析</h2>
+                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">ここまでの集計結果を最後にまとめて確認</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:gap-6">
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                        <h2
+                            class="text-sm md:text-base font-bold mb-4 text-gray-700 border-b pb-2 flex items-center gap-2">
+                            🤖 AI 売上簡易分析レポート
+                        </h2>
+                        <div class="text-sm text-gray-600 leading-relaxed" id="aiAnalysisComment">
+                            <p class="text-gray-400">※CSVファイルを読み込むと、ここにデータの集計結果に基づいた簡易分析レポートが自動生成されます。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        </div>
+        <div id="page-normal" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <section class="lg:col-span-2 space-y-3 md:space-y-4">
                 <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
                     <h2 class="text-base md:text-lg font-black text-gray-700">🚀 変化・売上構造</h2>
@@ -678,6 +725,10 @@
                     </div>
                 </div>
             </section>
+        </div>
+        </div>
+        <div id="page-premium" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <section class="lg:col-span-2 space-y-3 md:space-y-4">
                 <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
                     <h2 class="text-base md:text-lg font-black text-gray-700">🌟 Premium（定額制）分析</h2>
@@ -692,19 +743,6 @@
                         </h2>
                         <!-- 累計分析 -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
-                                <div class="flex justify-between items-center border-b pb-2 mb-4">
-                                    <h3 class="text-xs md:text-sm font-bold text-gray-700">🍩 収益依存度 (通常 vs Premium)</h3>
-                                    <button
-                                        class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition"
-                                        onclick="downloadChart('premiumRatioChart', 'Premium収益依存度')">📥
-                                        保存</button>
-                                </div>
-                                <div class="chart-container" style="height: 250px;"><canvas
-                                        id="premiumRatioChart"></canvas>
-                                </div>
-                                <div class="mt-2 grid grid-cols-2 gap-2 text-xs" id="premiumRatioSummary"></div>
-                            </div>
                             <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm">
                                 <div class="flex justify-between items-center border-b pb-2 mb-4">
                                     <h3 class="text-xs md:text-sm font-bold text-gray-700">🎨 カテゴリ別 比率 (Premium累計)</h3>
@@ -808,30 +846,6 @@
                                 <p class="text-xs text-gray-400">※CSVを読み込むと表示されます。</p>
                             </div>
                         </div>
-                        <!-- 2. アイテム別Premium依存度 -->
-                        <div
-                            class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm h-full min-h-[520px] flex flex-col">
-                            <div class="flex justify-between items-center border-b pb-2 mb-3">
-                                <div>
-                                    <h3 class="text-xs md:text-sm font-bold text-gray-700">⚖️ アイテム別「サブスク相性（Premium依存度）」
-                                    </h3>
-                                    <p class="text-[10px] text-gray-500 mt-1">
-                                        プレミアム入りした作品だけを対象に、総収益に占める通常販売とPremiumの構成比を表示
-                                    </p>
-                                </div>
-                                <button
-                                    class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition whitespace-nowrap"
-                                    onclick="downloadChart('premiumDependencyChart', 'アイテム別Premium依存度')">
-                                    📥 保存
-                                </button>
-                            </div>
-                            <div class="relative overflow-hidden flex-1 min-h-0" id="premiumDependencyChartContainer"
-                                style="height: 100%; min-height: 360px;">
-                                <div class="w-full h-full" id="premiumDependencyChartInner">
-                                    <canvas id="premiumDependencyChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
                         <!-- 3. Premiumカテゴリ月次トレンド -->
                         <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm lg:col-span-2">
                             <div class="flex justify-between items-center border-b pb-2 mb-3">
@@ -856,23 +870,34 @@
                     </div>
                 </div>
             </section>
-            <section class="lg:col-span-2 space-y-3 md:space-y-4">
-                <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
-                    <h2 class="text-base md:text-lg font-black text-gray-700">🤖 総合AI分析</h2>
-                    <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">ここまでの集計結果を最後にまとめて確認</p>
+        </div>
+        </div>
+        <!-- ⚖️ アイテム別「サブスク相性（Premium依存度）」は今回のVer2では非表示（Premium依存度は追加しない方針のため）。
+             既存のJS（drawPremiumDependencyChart等）がエラーにならないよう、要素自体はDOMに残しつつ常時非表示にしています。 -->
+        <div class="hidden" aria-hidden="true">
+            <div
+                class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm h-full min-h-[520px] flex flex-col">
+                <div class="flex justify-between items-center border-b pb-2 mb-3">
+                    <div>
+                        <h3 class="text-xs md:text-sm font-bold text-gray-700">⚖️ アイテム別「サブスク相性（Premium依存度）」
+                        </h3>
+                        <p class="text-[10px] text-gray-500 mt-1">
+                            プレミアム入りした作品だけを対象に、総収益に占める通常販売とPremiumの構成比を表示
+                        </p>
+                    </div>
+                    <button
+                        class="text-[10px] font-bold text-yellow-600 hover:text-yellow-700 active:scale-95 transition whitespace-nowrap"
+                        onclick="downloadChart('premiumDependencyChart', 'アイテム別Premium依存度')">
+                        📥 保存
+                    </button>
                 </div>
-                <div class="grid grid-cols-1 gap-4 md:gap-6">
-                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-                        <h2
-                            class="text-sm md:text-base font-bold mb-4 text-gray-700 border-b pb-2 flex items-center gap-2">
-                            🤖 AI 売上簡易分析レポート
-                        </h2>
-                        <div class="text-sm text-gray-600 leading-relaxed" id="aiAnalysisComment">
-                            <p class="text-gray-400">※CSVファイルを読み込むと、ここにデータの集計結果に基づいた簡易分析レポートが自動生成されます。</p>
-                        </div>
+                <div class="relative overflow-hidden flex-1 min-h-0" id="premiumDependencyChartContainer"
+                    style="height: 100%; min-height: 360px;">
+                    <div class="w-full h-full" id="premiumDependencyChartInner">
+                        <canvas id="premiumDependencyChart"></canvas>
                     </div>
                 </div>
-            </section>
+            </div>
         </div>
     </main>
     <footer
@@ -1353,6 +1378,45 @@
         }
 
 
+        // ============================================================
+        // ★ページ切り替え（📊総合 / 🛍️通常販売 / 🌟Premium）
+        // ============================================================
+        // 3つのボタンは「分析対象データを絞り込むフィルター」ではなく、
+        // 「表示する分析ページそのものを切り替える」ためのUIです。
+        // 各ページは常に決まった分析対象（総合=all／通常販売=normal／Premium=premium）で
+        // 描画されるため、内部的には既存のanalysisModeの仕組みをそのまま利用しています。
+        // switchPage() の引数は 'overview' / 'normal' / 'premium' の3種類。
+        const pageToId = {overview: 'page-overview', normal: 'page-normal', premium: 'page-premium'};
+        const pageToMode = {overview: 'all', normal: 'normal', premium: 'premium'};
+        // 既存ボタンの data-mode 値（"all" / "normal" / "premium"）→ ページ名 への対応
+        const modeToPage = {all: 'overview', normal: 'normal', premium: 'premium'};
+
+        function setActiveModeButton(mode) {
+            document.querySelectorAll('.analysis-mode-btn').forEach(btn => {
+                if (btn.dataset.mode === mode) {
+                    btn.classList.remove('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+                    btn.classList.add('bg-[#00C300]', 'text-white');
+                } else {
+                    btn.classList.remove('bg-[#00C300]', 'text-white');
+                    btn.classList.add('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+                }
+            });
+        }
+
+        function switchPage(page) {
+            const mode = pageToMode[page] || 'all';
+            analysisMode = mode;
+            setActiveModeButton(mode);
+            Object.values(pageToId).forEach(pageId => {
+                const el = document.getElementById(pageId);
+                if (el) el.classList.add('hidden');
+            });
+            const targetEl = document.getElementById(pageToId[page] || 'page-overview');
+            if (targetEl) targetEl.classList.remove('hidden');
+            // ★ページ切り替え時に window.scrollTo() 等の強制スクロールは行わない（現在のスクロール位置を維持する）
+            if (globalData.length > 0) renderDashboard();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const input = document.getElementById('excludeTitleKeywords');
             const scopeSelect = document.getElementById('excludeTitleScope');
@@ -1387,25 +1451,12 @@
                 }
             });
 
-            // ★分析対象モード（総合／通常販売／Premium）の切り替え
+            // ★ページ切り替え（📊総合／🛍️通常販売／🌟Premium）ボタンのクリックを配線
+            // 既存ボタンの data-mode="all|normal|premium" はそのまま利用し、switchPage()側でページ名に変換する
             const modeButtons = document.querySelectorAll('.analysis-mode-btn');
-            const setActiveModeButton = (mode) => {
-                modeButtons.forEach(btn => {
-                    if (btn.dataset.mode === mode) {
-                        btn.classList.remove('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
-                        btn.classList.add('bg-[#00C300]', 'text-white');
-                    } else {
-                        btn.classList.remove('bg-[#00C300]', 'text-white');
-                        btn.classList.add('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
-                    }
-                });
-            };
             modeButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    analysisMode = btn.dataset.mode;
-                    setActiveModeButton(analysisMode);
-                    // ページ上部へのスクロールは行わず、現在の表示位置のまま分析内容だけ更新する
-                    if (globalData.length > 0) renderDashboard();
+                    switchPage(modeToPage[btn.dataset.mode] || 'overview');
                 });
             });
         });
@@ -1444,7 +1495,7 @@
                 if (cachedData && cachedData.length > 0) {
                     globalData = cachedData;
                     setupFilters();
-                    renderDashboard();
+                    switchPage('overview'); // ★CSV読み込み後は必ず📊総合ページを表示する
                     document.getElementById('cacheStatusArea').classList.remove('hidden');
                 }
             } catch (err) {
@@ -1544,7 +1595,7 @@
                             globalData = parsedData;
                             localforage.setItem('lineSalesData', globalData);
                             setupFilters();
-                            renderDashboard();
+                            switchPage('overview'); // ★CSV読み込み後は必ず📊総合ページを表示する
                             document.getElementById('cacheStatusArea').classList.remove('hidden');
                         }
                     }
