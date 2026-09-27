@@ -221,6 +221,24 @@
                 </div>
             </aside>
             <div class="lg:order-1 min-w-0 mt-6 lg:mt-0">
+        <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-gray-200 mb-4 md:mb-6"
+            id="currentFilterSummaryCard">
+            <p class="text-xs md:text-sm font-bold text-gray-600 mb-2 flex items-center gap-1.5">🔎 現在の分析対象</p>
+            <div class="grid grid-cols-3 gap-2 md:gap-4 text-center">
+                <div>
+                    <p class="text-base md:text-lg font-black text-gray-800" id="filterSummaryItemCount">0作品</p>
+                    <p class="text-[10px] md:text-xs text-gray-400">対象作品数</p>
+                </div>
+                <div>
+                    <p class="text-base md:text-lg font-black text-gray-800" id="filterSummaryRevenue">¥0</p>
+                    <p class="text-[10px] md:text-xs text-gray-400">分配金総額</p>
+                </div>
+                <div>
+                    <p class="text-base md:text-lg font-black text-gray-800" id="filterSummarySalesCount">0件</p>
+                    <p class="text-[10px] md:text-xs text-gray-400">売上件数</p>
+                </div>
+            </div>
+        </div>
         <div id="page-overview">
         <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-[#00C300]">
@@ -1234,6 +1252,40 @@
 
         let globalItemFirstMonth = {}; // { "日本語タイトル": "YYYY.MM" } ライフサイクル分析用
         // Premium追加分析用の集計は renderDashboard() 内で毎回再計算します。
+
+        // ============================================================
+        // ★「🔎 現在の分析対象」集計カード（Ver.1.0.9）
+        // ------------------------------------------------------------
+        // 既存の getAnalysisData() の最終結果（analysisMode → タイトル抽出 →
+        // タイトル除外 まで適用済みのデータ）だけを使って集計する補助表示。
+        // getAnalysisData() 自体、および月選択（selectedMonths）による
+        // 既存KPIの絞り込みロジックには一切手を加えず、この関数はそれとは
+        // 独立に「現在の分析対象データ全体」を集計する。
+        // 作品の識別は、既存のitemsRev/itemsCount等と同じ「タイトル単位」の
+        // 数え方（masterDataMap[Item ID] || Item Title）に合わせている。
+        function updateCurrentFilterSummary() {
+            const itemCountEl = document.getElementById('filterSummaryItemCount');
+            const revenueEl = document.getElementById('filterSummaryRevenue');
+            const salesCountEl = document.getElementById('filterSummarySalesCount');
+            if (!itemCountEl || !revenueEl || !salesCountEl) return;
+
+            const data = getAnalysisData();
+            const uniqueTitles = new Set();
+            let totalRevenue = 0;
+            let totalSalesCount = 0;
+
+            data.forEach(row => {
+                const id = row['Item ID'];
+                const title = id ? (masterDataMap[id] || row['Item Title'] || '不明') : (row['Item Title'] || '不明');
+                uniqueTitles.add(title);
+                totalRevenue += parseFloat(row['Revenue Share']) || 0;
+                totalSalesCount += parseInt(row['Sales Counts']) || 0;
+            });
+
+            itemCountEl.textContent = `${uniqueTitles.size.toLocaleString()}作品`;
+            revenueEl.textContent = `¥${Math.floor(totalRevenue).toLocaleString()}`;
+            salesCountEl.textContent = `${totalSalesCount.toLocaleString()}件`;
+        }
         let premiumRescuedItems = [];
 
 
@@ -2807,6 +2859,7 @@
 
             drawPremiumTargetMonthCharts();
             renderPremiumAdditionalAnalysis();
+            updateCurrentFilterSummary();
             generateAIComment();
         }
 
@@ -3753,6 +3806,16 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.0.9
+                            現在の分析対象の集計表示を追加</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>現在の分析対象について、フィルター適用後の対象作品数・分配金総額・売上件数を表示する「🔎 現在の分析対象」カードを追加</li>
+                            <li>分析ページ切替（📊総合／🛍️通常販売／🌟Premium）・抽出/除外キーワード・除外適用範囲の変更に連動して自動更新</li>
+                            <li>集計は既存のgetAnalysisData()の最終結果のみを使用し、内部ロジックや既存KPIの計算結果は変更なし</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.0.8
