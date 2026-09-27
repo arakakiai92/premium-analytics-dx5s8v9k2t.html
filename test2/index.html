@@ -156,7 +156,7 @@
             </div>
         </div>
         <div class="lg:grid lg:grid-cols-[1fr_20rem] lg:gap-6">
-            <aside class="lg:order-2 mb-6 lg:mb-0" id="titleFilterAside">
+            <aside class="lg:order-2 sticky lg:static top-[var(--mobile-header-h,64px)] z-[5]" id="titleFilterAside">
                 <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:sticky lg:top-4 space-y-4">
                     <div>
                         <p class="text-sm font-bold text-gray-700 flex items-center gap-1.5 mb-2">📊 分析ページ</p>
@@ -220,7 +220,7 @@
                     </div>
                 </div>
             </aside>
-            <div class="lg:order-1 min-w-0">
+            <div class="lg:order-1 min-w-0 mt-6 lg:mt-0">
         <div id="page-overview">
         <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-[#00C300]">
@@ -3691,6 +3691,28 @@
 
         updateTargetMeter();
 
+        // ============================================================
+        // ★スマートフォン／タブレット表示（lg未満）専用：
+        //   「📊分析ページ＋🔎タイトル分析フィルター」パネル（#titleFilterAside）を
+        //   ヘッダー直下にposition:sticky（fixedではない）で固定表示するための
+        //   ヘッダー実測高さの反映。
+        // ------------------------------------------------------------
+        // ヘッダーはレスポンシブでロゴ・ボタンの折り返しにより高さが変動するため、
+        // 固定値を決め打ちにせず、実際のヘッダー高さを都度measureしてCSS変数
+        // --mobile-header-h に反映する。PC/タブレット(lg以上)ではaside自体が
+        // lg:static に戻るため、この値は使用されない（Ver.1.0.7までのsticky挙動を維持）。
+        function updateMobileHeaderHeightVar() {
+            const headerEl = document.querySelector('header');
+            if (!headerEl) return;
+            const h = headerEl.getBoundingClientRect().height;
+            if (h > 0) {
+                document.documentElement.style.setProperty('--mobile-header-h', `${Math.round(h)}px`);
+            }
+        }
+        updateMobileHeaderHeightVar();
+        window.addEventListener('load', updateMobileHeaderHeightVar);
+        window.addEventListener('resize', updateMobileHeaderHeightVar);
+
         function toggleNumbers() {
             numbersHidden = !numbersHidden;
             const btn = document.getElementById('toggleNumbersBtn');
@@ -3731,6 +3753,17 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.0.8
+                            スマートフォン表示の分析コントロール固定表示</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>スマートフォン表示時、「📊分析ページ／🔎タイトル分析フィルター」の分析コントロールをヘッダー直下にposition: stickyで固定表示するように変更（画面をスクロールしても操作可能）</li>
+                            <li>ヘッダーの実際の高さを都度取得し、固定位置がヘッダーと重ならないように調整</li>
+                            <li>固定部分には背景色を設定し、下の分析結果が透けて見えないように変更</li>
+                            <li>PC／タブレットの右側stickyパネル（Grid stretch構造）・ページ切替ロジック・タイトル分析フィルター・各種分析ロジックは変更なし</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.0.7
