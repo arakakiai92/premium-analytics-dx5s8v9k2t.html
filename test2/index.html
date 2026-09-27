@@ -104,15 +104,18 @@
                 </button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4 mb-4 mt-8 md:mt-4">
+                <div class="col-span-1 md:col-span-2 -mb-2">
+                    <p class="text-sm font-bold text-gray-700 flex items-center gap-1.5">📂 データ読み込み</p>
+                </div>
                 <div class="border p-4 rounded-lg bg-gray-50">
-                    <label class="block mb-2 text-sm font-bold text-gray-700">1. 売上CSVを一括選択 (必須):</label>
+                    <label class="block mb-2 text-sm font-bold text-gray-700">売上CSVを一括選択 (必須):</label>
                     <input accept=".csv"
                         class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-green-100 file:text-[#00C300] hover:file:bg-green-200 cursor-pointer transition"
                         id="csvFileInput" multiple="" type="file" />
                 </div>
                 <div class="border p-4 rounded-lg bg-gray-50 flex flex-col justify-between">
                     <div>
-                        <label class="block mb-2 text-sm font-bold text-gray-700">2. マスターデータCSV (任意・複数可):</label>
+                        <label class="block mb-2 text-sm font-bold text-gray-700">マスターデータCSV (任意・複数可):</label>
                         <input accept=".csv"
                             class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-100 file:text-blue-600 hover:file:bg-blue-200 cursor-pointer transition"
                             id="masterFileInput" multiple="" type="file" />
@@ -126,62 +129,22 @@
                     </div>
                 </div>
             </div>
-            <div class="border-t pt-4 mt-2">
-                <label class="block mb-2 text-sm font-bold text-gray-700">6. タイトル分析フィルター（任意）:</label>
-
-                <div class="border-t pt-4">
-                    <p class="text-sm font-bold text-gray-700 mb-3">🔎 タイトル分析フィルター</p>
-
-                    <div class="mb-3">
-                        <label class="block mb-1 text-xs font-bold text-gray-600">抽出するタイトルキーワード</label>
-                        <input id="includeTitleKeywords" type="text"
-                            class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:max-w-md"
-                            placeholder="例：シーサー、ヤンバルクイナ">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="block mb-1 text-xs font-bold text-gray-600">除外するタイトルキーワード</label>
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <input id="excludeTitleKeywords" type="text"
-                                class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full sm:max-w-md"
-                                placeholder="例：あけおめ、年賀、Happy New Year">
-                            <select id="excludeTitleScope"
-                                class="p-2 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300]">
-                                <option value="normal">適用範囲：通常販売のみ</option>
-                                <option value="normalPremium">適用範囲：通常販売＋Premium</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2">
-                        <button id="applyExcludeTitleBtn" type="button"
-                            class="text-xs font-bold text-white bg-[#00C300] hover:bg-[#009900] px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap">🔍
-                            フィルターを適用</button>
-                        <button id="clearExcludeTitleBtn" type="button"
-                            class="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap">解除</button>
-                    </div>
-
-                    <p class="text-[10px] md:text-xs text-gray-500 mt-2">
-                        ※「抽出」はキーワードを含む作品だけを、「除外」はキーワードを含む作品を分析対象から外します。どちらも複数指定する場合は「、」「,」または改行で区切ってください。除外の「適用範囲」で、Premiumデータも除外するかを選べます。抽出・除外とも空欄なら全作品が対象です。
-                    </p>
-
-                    <p id="includeTitleStatus" class="text-xs font-bold text-[#00C300] mt-2 hidden"></p>
-                    <p id="excludeTitleStatus" class="text-xs font-bold text-[#00C300] mt-1 hidden"></p>
-                </div>
-            </div>
             <div class="flex flex-col gap-4">
+                <div class="-mb-2">
+                    <p class="text-sm font-bold text-gray-700 flex items-center gap-1.5">📅 表示期間</p>
+                </div>
                 <div class="hidden" id="yearFilterSection">
-                    <label class="block mb-2 text-sm font-bold text-gray-700">3. 年単位で一括選択 / 解除:</label>
+                    <label class="block mb-2 text-sm font-bold text-gray-700">年単位で一括選択 / 解除:</label>
                     <div class="flex flex-wrap gap-2" id="yearFilterContainer"></div>
                 </div>
                 <div>
-                    <label class="block mb-2 text-sm font-bold text-gray-700">4. 表示する月を選択 (複数選択可):</label>
+                    <label class="block mb-2 text-sm font-bold text-gray-700">表示する月を選択 (複数選択可):</label>
                     <div class="flex flex-wrap gap-2" id="monthFilterContainer">
                         <span class="text-sm text-gray-400">※売上CSVを読み込むとここに月ボタンが表示されます</span>
                     </div>
                 </div>
                 <div class="border-t pt-4" id="targetRevenueSection">
-                    <label class="block mb-2 text-sm font-bold text-gray-700">5. 今月の売上目標と現在の進捗を入力 (円):</label>
+                    <label class="block mb-2 text-sm font-bold text-gray-700">🎯 今月の売上目標と現在の進捗を入力 (円):</label>
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
                         <div class="flex items-center gap-2 w-full sm:w-auto">
                             <span class="text-xs text-gray-500 min-w-[60px]">目標金額:</span>
@@ -208,6 +171,56 @@
                 </div>
             </div>
         </div>
+        <div class="lg:grid lg:grid-cols-[1fr_20rem] lg:gap-6 lg:items-start">
+            <aside class="lg:order-2 mb-6 lg:mb-0" id="titleFilterAside">
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:sticky lg:top-4">
+                    <button type="button" id="titleFilterToggleBtn"
+                        class="lg:hidden w-full flex items-center justify-between text-sm font-bold text-gray-700">
+                        <span class="flex items-center gap-1.5">🔎 分析フィルター</span>
+                        <span id="titleFilterToggleIcon" class="text-gray-400 transition-transform">▼</span>
+                    </button>
+                    <div id="titleFilterBody" class="hidden lg:block mt-3 lg:mt-0">
+                        <p class="hidden lg:flex items-center gap-1.5 text-sm font-bold text-gray-700 mb-3">🔎 タイトル分析フィルター</p>
+
+                        <div class="mb-3">
+                            <label class="block mb-1 text-xs font-bold text-gray-600">抽出するタイトルキーワード</label>
+                            <input id="includeTitleKeywords" type="text"
+                                class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full"
+                                placeholder="例：シーサー、ヤンバルクイナ">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block mb-1 text-xs font-bold text-gray-600">除外するタイトルキーワード</label>
+                            <div class="flex flex-col gap-2">
+                                <input id="excludeTitleKeywords" type="text"
+                                    class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full"
+                                    placeholder="例：あけおめ、年賀、Happy New Year">
+                                <select id="excludeTitleScope"
+                                    class="p-2 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full">
+                                    <option value="normal">適用範囲：通常販売のみ</option>
+                                    <option value="normalPremium">適用範囲：通常販売＋Premium</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            <button id="applyExcludeTitleBtn" type="button"
+                                class="text-xs font-bold text-white bg-[#00C300] hover:bg-[#009900] px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap">🔍
+                                フィルターを適用</button>
+                            <button id="clearExcludeTitleBtn" type="button"
+                                class="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap">解除</button>
+                        </div>
+
+                        <p class="text-[10px] md:text-xs text-gray-500 mt-2">
+                            ※「抽出」はキーワードを含む作品だけを、「除外」はキーワードを含む作品を分析対象から外します。どちらも複数指定する場合は「、」「,」または改行で区切ってください。除外の「適用範囲」で、Premiumデータも除外するかを選べます。抽出・除外とも空欄なら全作品が対象です。
+                        </p>
+
+                        <p id="includeTitleStatus" class="text-xs font-bold text-[#00C300] mt-2 hidden"></p>
+                        <p id="excludeTitleStatus" class="text-xs font-bold text-[#00C300] mt-1 hidden"></p>
+                    </div>
+                </div>
+            </aside>
+            <div class="lg:order-1 min-w-0">
         <div id="page-overview">
         <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-[#00C300]">
@@ -872,6 +885,8 @@
             </section>
         </div>
         </div>
+            </div>
+        </div>
         <!-- ⚖️ アイテム別「サブスク相性（Premium依存度）」は今回のVer2では非表示（Premium依存度は追加しない方針のため）。
              既存のJS（drawPremiumDependencyChart等）がエラーにならないよう、要素自体はDOMに残しつつ常時非表示にしています。 -->
         <div class="hidden" aria-hidden="true">
@@ -1484,6 +1499,18 @@
                     switchPage(modeToPage[btn.dataset.mode] || 'overview');
                 });
             });
+
+            // ★スマートフォン用：🔎 タイトル分析フィルターの折りたたみ開閉
+            // （PC/タブレットではCSSのlg:block指定により常時表示されるため、このボタン自体もlg:hiddenで非表示になる）
+            const titleFilterToggleBtn = document.getElementById('titleFilterToggleBtn');
+            const titleFilterBody = document.getElementById('titleFilterBody');
+            if (titleFilterToggleBtn && titleFilterBody) {
+                titleFilterToggleBtn.addEventListener('click', () => {
+                    const nowHidden = titleFilterBody.classList.toggle('hidden');
+                    const icon = document.getElementById('titleFilterToggleIcon');
+                    if (icon) icon.textContent = nowHidden ? '▼' : '▲';
+                });
+            }
         });
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -3704,6 +3731,17 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.0.6
+                            設定UI・フィルター操作性改善</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>設定項目の手順番号（1〜6）を廃止し、「📂 データ読み込み」「📅 表示期間」「🔎 タイトル分析フィルター」など機能別の見出しに整理</li>
+                            <li>タイトル分析フィルターをPC／タブレットでは分析結果の右側パネルに配置し、スクロール中も画面内に留まるsticky表示に変更</li>
+                            <li>スマートフォンでは「🔎 分析フィルター」を折りたたみ式パネルに整理し、横幅を圧迫しないように変更</li>
+                            <li>既存のタイトル抽出・除外ロジック、analysisMode、ページ切替（📊総合／🛍️通常販売／🌟Premium）、getAnalysisData()・isRowInTitleFilter()等の分析ロジックは変更なし</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.0.5
