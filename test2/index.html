@@ -77,22 +77,6 @@
         </div>
     </header>
     <main class="p-4 max-w-6xl mx-auto space-y-6">
-        <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-gray-200">
-            <div class="flex flex-wrap gap-2" id="analysisModeContainer">
-                <button
-                    class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-[#00C300] text-white"
-                    data-mode="all" type="button">📊 総合</button>
-                <button
-                    class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    data-mode="normal" type="button">🛍️ 通常販売</button>
-                <button
-                    class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    data-mode="premium" type="button">🌟 Premium</button>
-            </div>
-            <p class="text-[10px] md:text-xs text-gray-500 mt-2">
-                ※ボタンで表示する分析ページ（総合／通常販売／Premium）を切り替えます。下の「🔎 タイトル分析フィルター」は、選択中のページの中でそのまま機能します。
-            </p>
-        </div>
         <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 relative">
             <div class="hidden absolute top-4 right-4 flex items-center gap-3" id="cacheStatusArea">
                 <span class="bg-green-100 text-green-800 text-[10px] md:text-xs font-bold px-2 py-1 rounded shadow-sm">
@@ -173,7 +157,22 @@
         </div>
         <div class="lg:grid lg:grid-cols-[1fr_20rem] lg:gap-6">
             <aside class="lg:order-2 mb-6 lg:mb-0" id="titleFilterAside">
-                <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:sticky lg:top-4">
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 lg:sticky lg:top-4 space-y-4">
+                    <div>
+                        <p class="text-sm font-bold text-gray-700 flex items-center gap-1.5 mb-2">📊 分析ページ</p>
+                        <div class="flex flex-wrap gap-2" id="analysisModeContainer">
+                            <button
+                                class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-[#00C300] text-white"
+                                data-mode="all" type="button">📊 総合</button>
+                            <button
+                                class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                data-mode="normal" type="button">🛍️ 通常販売</button>
+                            <button
+                                class="analysis-mode-btn text-xs md:text-sm font-bold px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                data-mode="premium" type="button">🌟 Premium</button>
+                        </div>
+                    </div>
+                    <div class="border-t pt-4">
                     <button type="button" id="titleFilterToggleBtn"
                         class="lg:hidden w-full flex items-center justify-between text-sm font-bold text-gray-700">
                         <span class="flex items-center gap-1.5">🔎 分析フィルター</span>
@@ -217,6 +216,7 @@
 
                         <p id="includeTitleStatus" class="text-xs font-bold text-[#00C300] mt-2 hidden"></p>
                         <p id="excludeTitleStatus" class="text-xs font-bold text-[#00C300] mt-1 hidden"></p>
+                    </div>
                     </div>
                 </div>
             </aside>
@@ -3731,6 +3731,18 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.0.7
+                            分析コントロールパネル改善</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>「📊 総合／🛍️ 通常販売／🌟 Premium」の分析ページ切替を、上部から右側stickyパネルへ移動</li>
+                            <li>分析ページ切替とタイトル分析フィルターを、同じ右側パネル内から操作できるように整理</li>
+                            <li>PC／タブレットでは、分析結果をスクロールしている間もページ切替・フィルター操作が可能</li>
+                            <li>スマートフォンでも分析ページ切替ボタンを常時表示し、タイトル分析フィルターは既存の折りたたみ動作のまま維持</li>
+                            <li>ページ切替ロジック（switchPage()・analysisMode）、タイトル抽出・除外ロジック、各種分析ロジックは変更なし</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.0.6
