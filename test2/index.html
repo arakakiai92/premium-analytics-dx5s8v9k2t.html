@@ -192,9 +192,13 @@
 
                             <div class="mb-3">
                                 <label class="block mb-1 text-xs font-bold text-gray-600">抽出する作品ID</label>
-                                <textarea id="includeItemIds" rows="2"
+                                <div class="relative">
+                                    <textarea id="includeItemIds" rows="2"
                                     class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full resize-y"
                                     placeholder="例：12345678, 23456789（カンマ・改行区切り）"></textarea>
+                                    <div id="includeItemIdSuggest"
+                                        class="hidden absolute left-0 right-0 top-full mt-1 z-20 max-h-48 overflow-y-auto overscroll-contain bg-white border border-gray-200 rounded-lg shadow-lg"></div>
+                                </div>
                             </div>
 
                             <div class="mb-3">
@@ -213,9 +217,13 @@
 
                             <div class="mb-3">
                                 <label class="block mb-1 text-xs font-bold text-gray-600">除外する作品ID</label>
-                                <textarea id="excludeItemIds" rows="2"
+                                <div class="relative">
+                                    <textarea id="excludeItemIds" rows="2"
                                     class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full resize-y"
                                     placeholder="例：12345678, 34567890（カンマ・改行区切り）"></textarea>
+                                    <div id="excludeItemIdSuggest"
+                                        class="hidden absolute left-0 right-0 top-full mt-1 z-20 max-h-48 overflow-y-auto overscroll-contain bg-white border border-gray-200 rounded-lg shadow-lg"></div>
+                                </div>
                             </div>
 
                             <div class="flex flex-wrap gap-2">
@@ -227,7 +235,7 @@
                             </div>
 
                             <p class="text-[10px] md:text-xs text-gray-500 mt-2">
-                                ※「抽出」はキーワードを含む作品だけを、「除外」はキーワードを含む作品を分析対象から外します。タイトルキーワードは「、」「,」で区切って複数指定できます。作品IDは完全一致で、カンマまたは改行で区切って複数指定できます（作品IDは同じようなタイトルの別作品を個別に指定したいときに使います）。抽出のタイトルと作品IDはOR条件（どちらかに該当すれば対象）、除外も同様です。まず抽出で対象を決め、その後に除外を適用します。除外の「適用範囲」で、Premiumデータも除外するかを選べます。すべて空欄なら全作品が対象です。入力後は「フィルターを適用」で反映されます（作品ID欄ではEnterは改行、Ctrl+Enterで適用）。
+                                ※「抽出」はキーワードを含む作品だけを、「除外」はキーワードを含む作品を分析対象から外します。タイトルキーワードは「、」「,」で区切って複数指定できます。作品IDは完全一致で、カンマまたは改行で区切って複数指定できます（作品IDは同じようなタイトルの別作品を個別に指定したいときに使います）。抽出のタイトルと作品IDはOR条件（どちらかに該当すれば対象）、除外も同様です。まず抽出で対象を決め、その後に除外を適用します。除外の「適用範囲」で、Premiumデータも除外するかを選べます。すべて空欄なら全作品が対象です。作品ID欄をタップすると、過去に使った作品IDが候補に表示されます（このブラウザ内にのみ保存。候補を選んでも「フィルターを適用」するまで反映されません）。入力後は「フィルターを適用」で反映されます（作品ID欄ではEnterは改行、Ctrl+Enterで適用）。
                             </p>
 
                             <p id="includeTitleStatus" class="text-xs font-bold text-[#00C300] mt-2 hidden"></p>
@@ -1302,6 +1310,7 @@
             includeTitleKeywords = input.value.split(/[、,\\n]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
             const idInput = document.getElementById('includeItemIds');
             includeItemIds = new Set(parseItemIdList(idInput ? idInput.value : ''));
+            recordItemIdHistory(Array.from(includeItemIds));   // Ver.1.2.3：作品ID履歴に記録（判定には影響しない）
             const status = document.getElementById('includeTitleStatus');
             if (!status) return;
             if (includeTitleKeywords.length || includeItemIds.size) {
@@ -1330,6 +1339,7 @@
             if (scopeSelect) excludeTitleScope = scopeSelect.value;
             const idInput = document.getElementById('excludeItemIds');
             excludeItemIds = new Set(parseItemIdList(idInput ? idInput.value : ''));
+            recordItemIdHistory(Array.from(excludeItemIds));   // Ver.1.2.3：作品ID履歴に記録（判定には影響しない）
             const status = document.getElementById('excludeTitleStatus');
             if (excludeTitleKeywords.length || excludeItemIds.size) {
                 const scopeLabel = excludeTitleScope === 'normalPremium' ? '通常販売＋Premium' : '通常販売のみ';
@@ -1589,6 +1599,321 @@
             const sel = document.getElementById('monthlySalesCountTypeSelect');
             if (sel) sel.addEventListener('change', () => {
                 try { drawMonthlySalesCountChart(); } catch (e) { console.error('月別販売件数グラフでエラー:', e); }
+            });
+        });
+
+        // ============================================================
+        // ★作品ID履歴・予測入力（Ver.1.2.3）
+        // ------------------------------------------------------------
+        // フィルターで使った作品IDを、このブラウザの localStorage に履歴として保存し、
+        // ID入力欄で候補として呼び出せるようにする「入力補助」機能。
+        // ・抽出／除外どちらで使ったIDも共通の1つの履歴に入る（IDで重複排除、最近使った順）
+        // ・タイトルは「CSV → マスターデータ → なし」の順で取得。取得できなくてもIDだけで履歴に残る
+        // ・マスターデータは必須ではない
+        // ・候補を選んでも入力欄に文字が入るだけで、フィルターは「適用」するまで変わらない
+        // ・既存のフィルター判定（getAnalysisData等）は一切変更しない
+        // ・localStorage が使えない環境でも例外を出さず（その場合はメモリ上のみで動作）、分析本体に影響しない
+        const ITEM_ID_HISTORY_KEY = 'lineSalesAnalysis_idHistory';
+        const ITEM_ID_HISTORY_MAX = 200;
+        let itemIdHistoryMemory = null;   // localStorage が使えないときだけ使うメモリ上の履歴
+        let itemIdCsvTitleCache = {ref: null, len: -1, map: null};
+
+        function getItemIdHistoryStorage() {
+            try {
+                return (typeof window !== 'undefined' && window.localStorage) ? window.localStorage : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // 履歴の読み込み：壊れたデータや想定外の形式は無視して、読める分だけ使う
+        function loadItemIdHistory() {
+            const st = getItemIdHistoryStorage();
+            let list = null;
+            if (st) {
+                try {
+                    const raw = st.getItem(ITEM_ID_HISTORY_KEY);
+                    if (raw) list = JSON.parse(raw);
+                } catch (e) {
+                    list = null;
+                }
+            } else if (itemIdHistoryMemory) {
+                list = itemIdHistoryMemory;
+            }
+            if (!Array.isArray(list)) return [];
+            const seen = new Set();
+            const result = [];
+            list.forEach(e => {
+                if (!e || typeof e !== 'object') return;
+                const id = normalizeItemId(e.id);
+                if (!id || seen.has(id)) return;
+                seen.add(id);
+                result.push({
+                    id: id,
+                    title: typeof e.title === 'string' ? e.title : '',
+                    lastUsed: typeof e.lastUsed === 'string' ? e.lastUsed : ''
+                });
+            });
+            return result;
+        }
+
+        function saveItemIdHistory(list) {
+            const trimmed = list.slice(0, ITEM_ID_HISTORY_MAX);
+            const st = getItemIdHistoryStorage();
+            if (st) {
+                try {
+                    st.setItem(ITEM_ID_HISTORY_KEY, JSON.stringify(trimmed));
+                    itemIdHistoryMemory = null;
+                    return;
+                } catch (e) {
+                    // 容量超過・保存禁止など：メモリ上だけで継続する
+                }
+            }
+            itemIdHistoryMemory = trimmed;
+        }
+
+        // タイトル取得：① 読み込み済みCSV → ② 既存マスターデータ → ③ なし('')
+        function buildItemTitleLookup() {
+            try {
+                const gd = Array.isArray(globalData) ? globalData : [];
+                if (itemIdCsvTitleCache.ref !== gd || itemIdCsvTitleCache.len !== gd.length) {
+                    const map = new Map();
+                    gd.forEach(row => {
+                        const id = normalizeItemId(row['Item ID']);
+                        const title = row['Item Title'];
+                        if (id && title && !map.has(id)) map.set(id, String(title));
+                    });
+                    itemIdCsvTitleCache = {ref: gd, len: gd.length, map: map};
+                }
+                const csvMap = itemIdCsvTitleCache.map;
+                return id => {
+                    if (csvMap.has(id)) return csvMap.get(id);
+                    if (typeof masterDataMap === 'object' && masterDataMap &&
+                        Object.prototype.hasOwnProperty.call(masterDataMap, id) && masterDataMap[id]) {
+                        return String(masterDataMap[id]);
+                    }
+                    return '';
+                };
+            } catch (e) {
+                return () => '';
+            }
+        }
+
+        // タイトル未取得の履歴に、いま取得できるタイトルを補う（取得済みのタイトルは上書きしない）。変更があれば true。
+        function fillMissingItemIdTitles(list) {
+            if (!list.some(e => !e.title)) return false;
+            const lookup = buildItemTitleLookup();
+            let changed = false;
+            list.forEach(e => {
+                if (e.title) return;
+                const t = lookup(e.id);
+                if (t) { e.title = t; changed = true; }
+            });
+            return changed;
+        }
+
+        // 適用されたIDを履歴に記録（抽出・除外の区別なし／IDで重複排除／使ったIDを先頭へ）
+        function recordItemIdHistory(ids) {
+            try {
+                const cleaned = [];
+                (ids || []).forEach(v => {
+                    const id = normalizeItemId(v);
+                    if (id && !cleaned.includes(id)) cleaned.push(id);
+                });
+                if (!cleaned.length) return;
+                const now = new Date().toISOString();
+                const list = loadItemIdHistory();
+                const lookup = buildItemTitleLookup();
+                // 入力順の先頭IDが一番上に来るよう、後ろから先頭へ追加していく
+                for (let i = cleaned.length - 1; i >= 0; i--) {
+                    const id = cleaned[i];
+                    const idx = list.findIndex(e => e.id === id);
+                    const entry = idx >= 0 ? list.splice(idx, 1)[0] : {id: id, title: '', lastUsed: now};
+                    entry.lastUsed = now;
+                    if (!entry.title) entry.title = lookup(id) || '';
+                    list.unshift(entry);
+                }
+                fillMissingItemIdTitles(list);
+                saveItemIdHistory(list);
+            } catch (e) {
+                console.error('作品ID履歴の保存でエラー:', e);
+            }
+        }
+
+        function removeItemIdHistoryEntry(id) {
+            try {
+                saveItemIdHistory(loadItemIdHistory().filter(e => e.id !== normalizeItemId(id)));
+            } catch (e) {
+                console.error('作品ID履歴の削除でエラー:', e);
+            }
+        }
+
+        function clearItemIdHistory() {
+            const st = getItemIdHistoryStorage();
+            itemIdHistoryMemory = null;
+            if (st) {
+                try { st.removeItem(ITEM_ID_HISTORY_KEY); } catch (e) { /* 何もしない */ }
+            }
+        }
+
+        // 入力欄のカーソル位置にある「いま入力中のID」の範囲を返す
+        function getItemIdCaretToken(text, caret) {
+            const sep = /[,、，\s]/;
+            const s = String(text || '');
+            const pos = Math.max(0, Math.min(typeof caret === 'number' ? caret : s.length, s.length));
+            let start = pos;
+            while (start > 0 && !sep.test(s[start - 1])) start--;
+            let end = pos;
+            while (end < s.length && !sep.test(s[end])) end++;
+            return {start: start, end: end, token: s.slice(start, end)};
+        }
+
+        // 候補の抽出：入力中の文字が空なら全履歴（最近使った順）。ID前方一致 → ID部分一致 → タイトル部分一致 の順
+        function getItemIdSuggestions(history, token, usedIds) {
+            const q = normalizeItemId(token).toLowerCase();
+            const used = usedIds || new Set();
+            const avail = history.filter(e => !used.has(e.id));
+            if (!q) return avail;
+            const prefix = [], contains = [], byTitle = [];
+            avail.forEach(e => {
+                const id = e.id.toLowerCase();
+                if (id.startsWith(q)) prefix.push(e);
+                else if (id.includes(q)) contains.push(e);
+                else if (e.title && e.title.toLowerCase().includes(q)) byTitle.push(e);
+            });
+            return prefix.concat(contains, byTitle);
+        }
+
+        // 候補選択後の入力欄テキストを作る（他に入力済みのIDは保持）
+        function applyItemIdSuggestionToText(text, caret, id) {
+            const s = String(text || '');
+            const sep = /[,、，\s]/;
+            const tk = getItemIdCaretToken(s, caret);
+            let before = s.slice(0, tk.start);
+            let after = s.slice(tk.end);
+            if (before.length && !sep.test(before[before.length - 1])) before += ', ';
+            if (after.length && !sep.test(after[0])) after = ', ' + after;
+            const newText = before + id + after;
+            return {text: newText, caret: (before + id).length};
+        }
+
+        function hideItemIdSuggest(kind) {
+            const list = document.getElementById(kind + 'ItemIdSuggest');
+            if (list) list.classList.add('hidden');
+        }
+
+        // 候補リストの描画（position:absolute の重ね表示。パネルの高さは変えない）
+        function renderItemIdSuggest(kind) {
+            const ta = document.getElementById(kind + 'ItemIds');
+            const list = document.getElementById(kind + 'ItemIdSuggest');
+            if (!ta || !list) return;
+            try {
+                const history = loadItemIdHistory();
+                if (fillMissingItemIdTitles(history)) saveItemIdHistory(history);
+                const caret = (typeof ta.selectionStart === 'number') ? ta.selectionStart : String(ta.value || '').length;
+                const tk = getItemIdCaretToken(ta.value, caret);
+                const used = new Set(parseItemIdList(String(ta.value || '').slice(0, tk.start) + ' ' + String(ta.value || '').slice(tk.end)));
+                const items = getItemIdSuggestions(history, tk.token, used);
+
+                list.innerHTML = '';
+                if (!history.length || !items.length) {
+                    list.classList.add('hidden');
+                    return;
+                }
+
+                const header = document.createElement('div');
+                header.className = 'px-3 py-1.5 text-[10px] font-bold text-gray-400 bg-gray-50 border-b border-gray-100 sticky top-0';
+                header.textContent = tk.token ? `候補（${items.length}件）` : '最近使った作品ID';
+                list.appendChild(header);
+
+                items.forEach(e => {
+                    const row = document.createElement('div');
+                    row.className = 'flex items-stretch border-b border-gray-100 last:border-b-0';
+
+                    const pick = document.createElement('button');
+                    pick.type = 'button';
+                    pick.className = 'flex-1 min-w-0 flex items-baseline gap-2 text-left px-3 py-2 min-h-[40px] hover:bg-green-50 active:bg-green-100';
+                    const idSpan = document.createElement('span');
+                    idSpan.className = 'text-xs font-bold text-gray-800 shrink-0';
+                    idSpan.textContent = e.id;
+                    pick.appendChild(idSpan);
+                    if (e.title) {
+                        const titleSpan = document.createElement('span');
+                        titleSpan.className = 'text-xs text-gray-500 truncate';
+                        titleSpan.textContent = e.title;
+                        pick.appendChild(titleSpan);
+                    }
+                    // mousedownでフォーカスを奪わせない（入力欄のblurで候補が消えるのを防ぐ）
+                    pick.addEventListener('mousedown', ev => ev.preventDefault());
+                    pick.addEventListener('click', () => {
+                        const r = applyItemIdSuggestionToText(ta.value, (typeof ta.selectionStart === 'number') ? ta.selectionStart : String(ta.value || '').length, e.id);
+                        ta.value = r.text;
+                        if (typeof ta.setSelectionRange === 'function') ta.setSelectionRange(r.caret, r.caret);
+                        hideItemIdSuggest(kind);
+                    });
+
+                    const del = document.createElement('button');
+                    del.type = 'button';
+                    del.className = 'shrink-0 px-3 text-gray-400 hover:text-red-500 active:text-red-600 text-sm font-bold';
+                    del.setAttribute('aria-label', `作品ID ${e.id} を履歴から削除`);
+                    del.textContent = '×';
+                    del.addEventListener('mousedown', ev => ev.preventDefault());
+                    del.addEventListener('click', () => {
+                        removeItemIdHistoryEntry(e.id);
+                        renderItemIdSuggest(kind);
+                    });
+
+                    row.appendChild(pick);
+                    row.appendChild(del);
+                    list.appendChild(row);
+                });
+
+                const clearAll = document.createElement('button');
+                clearAll.type = 'button';
+                clearAll.className = 'w-full text-left px-3 py-2 text-[10px] font-bold text-gray-400 hover:text-red-500 bg-gray-50 border-t border-gray-100';
+                clearAll.textContent = '履歴をすべて削除';
+                clearAll.addEventListener('mousedown', ev => ev.preventDefault());
+                clearAll.addEventListener('click', () => {
+                    if (typeof confirm === 'function' && !confirm('保存している作品ID履歴をすべて削除しますか？')) return;
+                    clearItemIdHistory();
+                    hideItemIdSuggest(kind);
+                });
+                list.appendChild(clearAll);
+
+                list.classList.remove('hidden');
+                // 画面下に収まらず、上のほうが広い場合は上向きに開く（スクロール位置は変えない）
+                list.classList.remove('bottom-full', 'mb-1');
+                list.classList.add('top-full', 'mt-1');
+                if (typeof ta.getBoundingClientRect === 'function' && typeof window !== 'undefined' && window.innerHeight) {
+                    const rect = ta.getBoundingClientRect();
+                    const listH = Math.min(list.offsetHeight || 192, 192);
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    if (spaceBelow < listH + 8 && rect.top > spaceBelow) {
+                        list.classList.remove('top-full', 'mt-1');
+                        list.classList.add('bottom-full', 'mb-1');
+                    }
+                }
+            } catch (e) {
+                console.error('作品ID候補の表示でエラー:', e);
+                list.classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            ['include', 'exclude'].forEach(kind => {
+                const ta = document.getElementById(kind + 'ItemIds');
+                if (!ta) return;
+                const show = () => renderItemIdSuggest(kind);
+                ta.addEventListener('focus', show);
+                ta.addEventListener('input', show);
+                ta.addEventListener('click', show);
+                ta.addEventListener('keyup', ev => {
+                    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'Home' || ev.key === 'End') show();
+                });
+                ta.addEventListener('keydown', ev => {
+                    if (ev.key === 'Escape') hideItemIdSuggest(kind);
+                });
+                ta.addEventListener('blur', () => setTimeout(() => hideItemIdSuggest(kind), 150));
             });
         });
 
@@ -4275,6 +4600,17 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.2.3
+                            作品ID履歴・予測入力機能を追加</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>作品フィルターで使った作品ID（抽出・除外とも共通）を、このブラウザに履歴として保存</li>
+                            <li>作品ID欄をタップ／入力すると、過去に使った作品IDを最近使った順に候補表示し、選んで入力可能（マスターデータがなくてもIDだけで利用可）</li>
+                            <li>CSVまたはマスターデータから取得できる場合は作品タイトルも併記。履歴の個別削除・全削除に対応</li>
+                            <li>既存のフィルター判定・分析ロジックは変更なし</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.2.2
