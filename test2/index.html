@@ -176,18 +176,25 @@
                     <div class="border-t pt-4">
                         <button type="button" id="titleFilterToggleBtn"
                             class="lg:hidden w-full flex items-center justify-between text-sm font-bold text-gray-700">
-                            <span class="flex items-center gap-1.5">🔎 分析フィルター</span>
+                            <span class="flex items-center gap-1.5">🔎 作品フィルター</span>
                             <span id="titleFilterToggleIcon" class="text-gray-400 transition-transform">▼</span>
                         </button>
                         <div id="titleFilterBody" class="hidden lg:block mt-3 lg:mt-0">
                             <p class="hidden lg:flex items-center gap-1.5 text-sm font-bold text-gray-700 mb-3">🔎
-                                タイトル分析フィルター</p>
+                                作品フィルター</p>
 
                             <div class="mb-3">
                                 <label class="block mb-1 text-xs font-bold text-gray-600">抽出するタイトルキーワード</label>
                                 <input id="includeTitleKeywords" type="text"
                                     class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full"
                                     placeholder="例：シーサー、ヤンバルクイナ">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="block mb-1 text-xs font-bold text-gray-600">抽出する作品ID</label>
+                                <textarea id="includeItemIds" rows="2"
+                                    class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full resize-y"
+                                    placeholder="例：12345678, 23456789（カンマ・改行区切り）"></textarea>
                             </div>
 
                             <div class="mb-3">
@@ -204,6 +211,13 @@
                                 </div>
                             </div>
 
+                            <div class="mb-3">
+                                <label class="block mb-1 text-xs font-bold text-gray-600">除外する作品ID</label>
+                                <textarea id="excludeItemIds" rows="2"
+                                    class="p-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 focus:ring-[#00C300] focus:border-[#00C300] w-full resize-y"
+                                    placeholder="例：12345678, 34567890（カンマ・改行区切り）"></textarea>
+                            </div>
+
                             <div class="flex flex-wrap gap-2">
                                 <button id="applyExcludeTitleBtn" type="button"
                                     class="text-xs font-bold text-white bg-[#00C300] hover:bg-[#009900] px-4 py-2 rounded-lg active:scale-95 transition whitespace-nowrap">🔍
@@ -213,7 +227,7 @@
                             </div>
 
                             <p class="text-[10px] md:text-xs text-gray-500 mt-2">
-                                ※「抽出」はキーワードを含む作品だけを、「除外」はキーワードを含む作品を分析対象から外します。どちらも複数指定する場合は「、」「,」または改行で区切ってください。除外の「適用範囲」で、Premiumデータも除外するかを選べます。抽出・除外とも空欄なら全作品が対象です。
+                                ※「抽出」はキーワードを含む作品だけを、「除外」はキーワードを含む作品を分析対象から外します。タイトルキーワードは「、」「,」で区切って複数指定できます。作品IDは完全一致で、カンマまたは改行で区切って複数指定できます（作品IDは同じようなタイトルの別作品を個別に指定したいときに使います）。抽出のタイトルと作品IDはOR条件（どちらかに該当すれば対象）、除外も同様です。まず抽出で対象を決め、その後に除外を適用します。除外の「適用範囲」で、Premiumデータも除外するかを選べます。すべて空欄なら全作品が対象です。入力後は「フィルターを適用」で反映されます（作品ID欄ではEnterは改行、Ctrl+Enterで適用）。
                             </p>
 
                             <p id="includeTitleStatus" class="text-xs font-bold text-[#00C300] mt-2 hidden"></p>
@@ -239,6 +253,9 @@
                             <p class="text-base md:text-lg font-black text-gray-800" id="filterSummarySalesCount">0件</p>
                             <p class="text-[10px] md:text-xs text-gray-400">売上件数</p>
                         </div>
+                    </div>
+                    <div id="filterSummaryConditions"
+                        class="hidden mt-3 pt-2 border-t border-gray-100 text-[10px] md:text-xs text-gray-500 font-bold whitespace-pre-line break-words">
                     </div>
                 </div>
                 <div id="page-overview">
@@ -1261,16 +1278,37 @@
         let excludeTitleKeywords = [];
         let excludeTitleScope = 'normal'; // 'normal'（通常販売のみ） or 'normalPremium'（通常販売＋Premium）
         let includeTitleKeywords = [];
+        // ★Ver.1.2.0：作品ID（Item ID）による抽出・除外。比較は常に文字列の完全一致。
+        let includeItemIds = new Set();
+        let excludeItemIds = new Set();
+
+        // Item ID の正規化：文字列化・前後空白除去・全角→半角(NFKC)。CSV側・入力側の両方に使う。
+        function normalizeItemId(v) {
+            return String(v == null ? '' : v).normalize('NFKC').trim();
+        }
+
+        // 入力欄のテキストをID配列に変換（カンマ・読点・改行・空白区切り、空要素除去、重複除去）
+        function parseItemIdList(text) {
+            const ids = String(text || '').split(/[,、，\s]+/)
+                .map(t => normalizeItemId(t).replace(/^["'“”‘’]+|["'“”‘’]+$/g, ''))
+                .filter(Boolean);
+            return Array.from(new Set(ids));
+        }
         let analysisMode = 'all'; // 'all'（総合） / 'normal'（通常販売） / 'premium'（Premium）
 
         function updateIncludeTitleKeywords() {
             const input = document.getElementById('includeTitleKeywords');
             if (!input) return;
             includeTitleKeywords = input.value.split(/[、,\\n]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+            const idInput = document.getElementById('includeItemIds');
+            includeItemIds = new Set(parseItemIdList(idInput ? idInput.value : ''));
             const status = document.getElementById('includeTitleStatus');
             if (!status) return;
-            if (includeTitleKeywords.length) {
-                status.textContent = `抽出：${includeTitleKeywords.join(' / ')}`;
+            if (includeTitleKeywords.length || includeItemIds.size) {
+                const parts = [];
+                if (includeTitleKeywords.length) parts.push(`タイトル ${includeTitleKeywords.join(' / ')}`);
+                if (includeItemIds.size) parts.push(`ID ${Array.from(includeItemIds).join(' / ')}`);
+                status.textContent = `抽出：${parts.join('、')}${parts.length > 1 ? '（OR条件）' : ''}`;
                 status.classList.remove('hidden');
             } else {
                 status.textContent = '';
@@ -1290,10 +1328,15 @@
             if (!input) return;
             excludeTitleKeywords = input.value.split(/[、,\\n]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
             if (scopeSelect) excludeTitleScope = scopeSelect.value;
+            const idInput = document.getElementById('excludeItemIds');
+            excludeItemIds = new Set(parseItemIdList(idInput ? idInput.value : ''));
             const status = document.getElementById('excludeTitleStatus');
-            if (excludeTitleKeywords.length) {
+            if (excludeTitleKeywords.length || excludeItemIds.size) {
                 const scopeLabel = excludeTitleScope === 'normalPremium' ? '通常販売＋Premium' : '通常販売のみ';
-                status.textContent = `除外：${excludeTitleKeywords.join(' / ')}（適用範囲：${scopeLabel}）`;
+                const parts = [];
+                if (excludeTitleKeywords.length) parts.push(`タイトル ${excludeTitleKeywords.join(' / ')}`);
+                if (excludeItemIds.size) parts.push(`ID ${Array.from(excludeItemIds).join(' / ')}`);
+                status.textContent = `除外：${parts.join('、')}${parts.length > 1 ? '（OR条件）' : ''}（適用範囲：${scopeLabel}）`;
                 status.classList.remove('hidden');
             } else {
                 status.textContent = '';
@@ -1322,58 +1365,72 @@
                 data = data.filter(row => isPremiumRow(row));
             }
 
-            // ② 抽出キーワードが指定されている場合、まずそのキーワードを含むタイトルだけに絞り込む
+            // ② 抽出条件（タイトルキーワード OR 作品ID）が指定されている場合、該当する行だけに絞り込む
             //    未指定の場合は①までの結果をそのまま使う（従来動作を維持）
-            if (includeTitleKeywords.length) {
-                data = data.filter(row => {
-                    const title = masterDataMap[row['Item ID']] || row['Item Title'] || '';
-                    return isTitleIncluded(title);
-                });
+            if (hasIncludeFilter()) {
+                data = data.filter(isRowIncludedByFilter);
             }
 
-            // ③ 除外キーワードが未指定の場合は、②までの結果をそのまま返す
+            // ③ 除外条件（タイトルキーワード OR 作品ID）が未指定の場合は、②までの結果をそのまま返す
             //    （分析モードが「総合」で抽出・除外どちらも未指定なら、従来通りglobalDataをそのまま返す）
-            if (!excludeTitleKeywords.length) return data;
+            if (!hasExcludeFilter()) return data;
 
-            return data.filter(row => {
-                const title = masterDataMap[row['Item ID']] || row['Item Title'] || '';
+            return data.filter(row => !isRowExcludedByFilter(row));
+        }
 
-                if (!isTitleExcluded(title)) return true;
+        // ============================================================
+        // ★作品フィルターの共通判定（Ver.1.2.0）
+        // ------------------------------------------------------------
+        // 抽出＝「タイトルキーワードに一致 OR 作品IDに完全一致」、除外も同様。
+        // 判定順序は 抽出 → 除外（従来どおり）。作品IDは正規化した文字列の完全一致のみ。
+        // getAnalysisData() と isRowInTitleFilter() の両方がこれらの関数を使うので、
+        // 画面全体・Premium救済・Premiumカテゴリ月次トレンドで条件が必ず一致する。
+        function hasIncludeFilter() {
+            return includeTitleKeywords.length > 0 || includeItemIds.size > 0;
+        }
 
-                // ここに来るのは除外キーワードに一致した行
-                // 「通常販売のみ」が適用範囲の場合、Premium行は除外しない
-                if (excludeTitleScope === 'normal' && isPremiumRow(row)) {
-                    return true;
-                }
+        function hasExcludeFilter() {
+            return excludeTitleKeywords.length > 0 || excludeItemIds.size > 0;
+        }
 
-                // 「通常販売＋Premium」の場合、または通常販売の行は除外する
-                return false;
-            });
+        function isWorkFilterActive() {
+            return hasIncludeFilter() || hasExcludeFilter();
+        }
+
+        function getRowTitleForFilter(row) {
+            return masterDataMap[row['Item ID']] || row['Item Title'] || '';
+        }
+
+        // 抽出条件に該当するか（抽出条件なしなら true）
+        function isRowIncludedByFilter(row) {
+            if (!hasIncludeFilter()) return true;
+            if (includeTitleKeywords.length && isTitleIncluded(getRowTitleForFilter(row))) return true;
+            if (includeItemIds.size && includeItemIds.has(normalizeItemId(row['Item ID']))) return true;
+            return false;
+        }
+
+        // 除外されるべき行か（除外条件に該当し、かつ適用範囲の対象である場合に true）
+        function isRowExcludedByFilter(row) {
+            if (!hasExcludeFilter()) return false;
+            const matched =
+                (excludeTitleKeywords.length > 0 && isTitleExcluded(getRowTitleForFilter(row))) ||
+                (excludeItemIds.size > 0 && excludeItemIds.has(normalizeItemId(row['Item ID'])));
+            if (!matched) return false;
+            // 「通常販売のみ」が適用範囲の場合、Premium行は除外しない
+            if (excludeTitleScope === 'normal' && isPremiumRow(row)) return false;
+            return true;
         }
 
         // ============================================================
         // ★「🎁 Premiumに救済された底力アイテム」「📈 Premiumカテゴリ月次トレンド」を
-        //   タイトル分析フィルター（抽出／除外／除外範囲）に連動させるための共通判定関数。
+        //   作品フィルター（抽出／除外／除外範囲）に連動させるための共通判定関数。
         // ------------------------------------------------------------
-        // getAnalysisData() の②③ステップ（タイトル抽出・タイトル除外の判定）と
-        // 完全に同じロジックを1行単位の判定として切り出したものです。
-        // getAnalysisData()自体は変更せず、①のanalysisModeによる種別絞り込み
-        // （通常/Premiumの絞り込み）は行いません。
+        // getAnalysisData() の②③ステップと同じ判定（上の共通関数）を1行単位で適用する。
+        // ①のanalysisModeによる種別絞り込み（通常/Premium）は行わない。
         // 「救済アイテム」判定は「同一アイテムの通常販売とPremiumを比較する」処理のため、
-        // globalDataの両方の行種別を維持したままタイトル条件だけを適用する必要があるためです。
+        // globalDataの両方の行種別を維持したまま作品フィルター条件だけを適用する必要があるため。
         function isRowInTitleFilter(row) {
-            const title = masterDataMap[row['Item ID']] || row['Item Title'] || '';
-
-            if (includeTitleKeywords.length && !isTitleIncluded(title)) return false;
-
-            if (!excludeTitleKeywords.length) return true;
-
-            if (!isTitleExcluded(title)) return true;
-
-            // 「通常販売のみ」が適用範囲の場合、Premium行は除外しない（getAnalysisData()と同じ仕様）
-            if (excludeTitleScope === 'normal' && isPremiumRow(row)) return true;
-
-            return false;
+            return isRowIncludedByFilter(row) && !isRowExcludedByFilter(row);
         }
 
         let globalItemFirstMonth = {}; // { "日本語タイトル": "YYYY.MM" } ライフサイクル分析用
@@ -1535,6 +1592,21 @@
             });
         });
 
+        // ★「🔎 現在の分析対象」カードに、適用中の作品フィルター条件を表示（Ver.1.2.0）
+        // 条件が設定されていない項目は表示しない。全て未設定ならエリアごと非表示。
+        function updateFilterConditionLines() {
+            const el = document.getElementById('filterSummaryConditions');
+            if (!el) return;
+            const lines = [];
+            if (includeTitleKeywords.length) lines.push(`タイトル抽出：${includeTitleKeywords.join(' / ')}`);
+            if (includeItemIds.size) lines.push(`ID抽出：${Array.from(includeItemIds).join(' / ')}`);
+            if (excludeTitleKeywords.length) lines.push(`タイトル除外：${excludeTitleKeywords.join(' / ')}`);
+            if (excludeItemIds.size) lines.push(`ID除外：${Array.from(excludeItemIds).join(' / ')}`);
+            if (includeTitleKeywords.length && includeItemIds.size) lines.push('※抽出はタイトルとIDのOR条件');
+            if (hasExcludeFilter()) lines.push(`除外の適用範囲：${excludeTitleScope === 'normalPremium' ? '通常販売＋Premium' : '通常販売のみ'}`);
+            el.textContent = lines.join('\n');
+            el.classList.toggle('hidden', lines.length === 0);
+        }
         let premiumRescuedItems = [];
 
 
@@ -1777,7 +1849,21 @@
                 if (input) input.value = '';
                 if (scopeSelect) scopeSelect.value = 'normal';
                 if (includeInput) includeInput.value = '';
+                const includeIdInput = document.getElementById('includeItemIds');
+                const excludeIdInput = document.getElementById('excludeItemIds');
+                if (includeIdInput) includeIdInput.value = '';
+                if (excludeIdInput) excludeIdInput.value = '';
                 apply();
+            });
+            // 作品ID欄は複数行入力のため、Enterは改行。Ctrl+Enter（Macはcmd+Enter）で適用する。
+            ['includeItemIds', 'excludeItemIds'].forEach(idName => {
+                const el = document.getElementById(idName);
+                if (el) el.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        apply();
+                    }
+                });
             });
             if (input) input.addEventListener('keydown', e => {
                 if (e.key === 'Enter') {
@@ -3110,6 +3196,11 @@
             renderPremiumAdditionalAnalysis();
             updateCurrentFilterSummary();
             try {
+                updateFilterConditionLines();
+            } catch (e) {
+                console.error('作品フィルター条件表示でエラー:', e);
+            }
+            try {
                 renderSalesTypeOverview();
             } catch (e) {
                 console.error('販売種類別の状況でエラー:', e);
@@ -3202,10 +3293,10 @@
             countBadge.textContent = `${rescued.length}件`;
 
             if (rescued.length === 0) {
-                const filterActive = includeTitleKeywords.length > 0 || excludeTitleKeywords.length > 0;
+                const filterActive = isWorkFilterActive();
                 area.innerHTML = filterActive ? `
                     <div class="p-3 bg-gray-50 rounded-lg text-xs text-gray-500">
-                        現在のタイトル分析フィルター条件に該当する「底力」アイテムはありません。
+                        現在の作品フィルター条件に該当する「底力」アイテムはありません。
                     </div>` : `
                     <div class="p-3 bg-gray-50 rounded-lg text-xs text-gray-500">
                         選択中の期間には、該当する「底力」アイテムはありません。
@@ -3504,13 +3595,13 @@
             // グラフだけで読みにくくならないよう、月別・カテゴリ別の正確な金額も表で併記
             const summary = document.getElementById('premiumCategoryTrendSummary');
             if (summary) {
-                const filterActive = includeTitleKeywords.length > 0 || excludeTitleKeywords.length > 0;
+                const filterActive = isWorkFilterActive();
                 const grandTotal = months.reduce((sum, m, i) => sum + categories.reduce((s, c, ci) => s + (datasets[ci].data[i] || 0), 0), 0);
 
                 if (filterActive && grandTotal === 0) {
                     summary.innerHTML = `
                     <div class="p-3 bg-gray-50 rounded-lg text-xs text-gray-500">
-                        現在のタイトル分析フィルター条件に該当するPremiumデータがありません。
+                        現在の作品フィルター条件に該当するPremiumデータがありません。
                     </div>`;
                 } else {
                     const ja = {Sticker: 'スタンプ', Emoji: '絵文字', Theme: '着せかえ'};
@@ -4060,6 +4151,18 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.2.0
+                            作品フィルター（作品IDによる抽出・除外）を追加</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>「タイトル分析フィルター」を「作品フィルター」に拡張。タイトルキーワードに加えて、作品ID（Item ID）でも抽出・除外が可能に</li>
+                            <li>作品IDは複数指定に対応（カンマ・改行区切り）。完全一致で判定し、部分一致はしない</li>
+                            <li>抽出・除外ともタイトルと作品IDはOR条件。判定順序は従来どおり「抽出→除外」で、除外の適用範囲（通常販売のみ／通常販売＋Premium）も従来どおり</li>
+                            <li>同じようなタイトルの別作品（例：旧作と再販）を、IDで個別に除外・抽出できるように</li>
+                            <li>総合／通常販売／Premium、販売種類別の状況、月別販売件数、Premium救済・カテゴリ月次トレンドにも同じ条件で連動。「現在の分析対象」カードに適用中の条件を表示</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.1.0
