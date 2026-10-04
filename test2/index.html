@@ -3918,6 +3918,81 @@
             }
         }
 
+        // ============================================================
+        // ★売上集中度の計算と文章生成（Ver.1.2.1）
+        // ------------------------------------------------------------
+        // 「総合AI分析」は外部AIではなくアプリ内のルールベース文章生成です。
+        // 構成比は必ずここでアプリ側が実データから計算し、その数値だけを文章に使います。
+        // 作品の識別は既存ランキング／パレート分析と同じ「タイトル単位」
+        // （masterDataMap[Item ID] || Item Title）。並び順も既存ランキングと同じ収益降順。
+        // 構成比の表示は既存のパレート分析と同じ小数1桁(toFixed(1))。
+        function calcSalesConcentration(itemsRev) {
+            const titles = Object.keys(itemsRev).sort((a, b) => itemsRev[b] - itemsRev[a]);
+            const total = titles.reduce((s, t) => s + itemsRev[t], 0);
+            const sumTop = n => titles.slice(0, n).reduce((s, t) => s + itemsRev[t], 0);
+            const pct = n => total > 0 ? (sumTop(n) / total) * 100 : 0;
+            return {
+                totalRevenue: total,
+                totalWorks: titles.length,                                  // 分析対象に登場する作品数
+                revenueWorks: titles.filter(t => itemsRev[t] > 0).length,   // うち売上が発生している作品数
+                top1Title: titles[0] || null,
+                top1Pct: pct(1),
+                top3Pct: pct(3),
+                top5Pct: pct(5),
+                top10Pct: pct(10)
+            };
+        }
+
+        // 数値 → 集中度の判断。TOP1だけでなくTOP3・TOP10も総合して見る。
+        // 'few'（作品数が少なく判断不可）/ 'high'（集中）/ 'moderate'（やや集中）/ 'dispersed'（分散）
+        function judgeSalesConcentration(c) {
+            if (c.revenueWorks < 5) return 'few';
+            if (c.top1Pct >= 25 || c.top3Pct >= 50) return 'high';
+            // TOP10は作品数が十分ある(20作品以上)場合のみ判断材料にする
+            if (c.top1Pct >= 12 || c.top3Pct >= 30 || (c.revenueWorks >= 20 && c.top10Pct >= 70)) return 'moderate';
+            return 'dispersed';
+        }
+
+        function escapeHtmlForAI(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[ch]));
+        }
+
+        // 「💡 ヒット商品の傾向と分析」の本文と、1つ目の推奨アクションを組み立てる
+        function buildHitItemAnalysis(c, level, topTypeJa, catSharePct, topItemTypeJa, topItemIsTopType) {
+            const strong = v => `<strong class="text-gray-900">${v}</strong>`;
+            const f1 = v => v.toFixed(1);
+            const item = c.top1Title ? `「${strong(escapeHtmlForAI(c.top1Title))}」` : '該当作品';
+            const catIntro = `通常期に最も収益の柱となっている主力カテゴリは【${strong(topTypeJa)}】（通常期売上の ${strong(f1(catSharePct) + '%')}）です。`;
+            const itemWhere = topItemIsTopType ? `カテゴリ内トップの作品` : `売上1位の作品（【${topItemTypeJa}】カテゴリ）`;
+            const shares = `1位 ${strong(f1(c.top1Pct) + '%')}・上位3作品 ${strong(f1(c.top3Pct) + '%')}・上位5作品 ${strong(f1(c.top5Pct) + '%')}・上位10作品 ${strong(f1(c.top10Pct) + '%')}`;
+            let body = '';
+            let action = '';
+
+            if (level === 'few') {
+                body = `${catIntro}ただし、売上が発生している作品が${strong(c.revenueWorks + '作品')}と少ないため、構成比が高く出やすく、集中・分散の判断は慎重に行う必要があります。参考値として、${itemWhere}である${item}は通常期売上の ${strong(f1(c.top1Pct) + '%')} を占めています。`;
+                action = `売上が発生している作品を増やし、どの作品・カテゴリに需要があるかを判断できるデータを蓄積するための新作展開`;
+            } else if (level === 'high') {
+                body = `${catIntro}${itemWhere}である${item}は通常期売上の ${strong(f1(c.top1Pct) + '%')} を占め、${shares}と、少数の作品が収益を大きく牽引しています。` +
+                    `ヒット作品への依存度が高いため、主力作品を軸にした継続的な展開と、その「ウケている要素（絵柄のトーンや言葉のチョイス）」を活かした後続シリーズで、第二・第三の柱を育てていくことが重要です。`;
+                action = `売上を大きく牽引している「${escapeHtmlForAI(c.top1Title)}」の世界観を踏襲した、新作スピンオフの企画`;
+            } else if (level === 'moderate') {
+                body = `${catIntro}${itemWhere}である${item}は通常期売上の ${strong(f1(c.top1Pct) + '%')} で、${shares}です。上位作品への一定の集中は見られますが、特定の1作品に強く依存している状態とまでは言えず、上位作品群とその他の作品の両方が売上を支えています。` +
+                    `上位作品に共通する要素（絵柄のトーンや言葉のチョイス）を抽出し、売れている傾向を新作へ展開していくことが有効です。`;
+                action = `売上上位の作品群に共通する絵柄・言葉の傾向を分析し、【${escapeHtmlForAI(topTypeJa)}】の新作ラインナップを拡充する企画`;
+            } else {
+                const catLine = (catSharePct >= 40)
+                    ? `【${strong(topTypeJa)}】カテゴリが収益の柱となっていますが、個別作品への集中度は低く、カテゴリ全体に需要が分散しています。個別の作品というより【${topTypeJa}】全体に需要がある可能性があります。`
+                    : `【${strong(topTypeJa)}】カテゴリが最も大きな割合ですが、個別作品への集中度は低く、売上は複数の作品に分かれています。`;
+                body = `${catIntro}${itemWhere}である${item}も構成比は ${strong(f1(c.top1Pct) + '%')} にとどまり、${shares}です。特定の1作品への依存度は低めで、複数の作品が売上を分担して支えており、ポートフォリオ全体で収益を形成していると考えられます。` +
+                    `${catLine}` +
+                    `特定のヒット作に頼らない構造を活かし、売れている作品群に共通する要素（絵柄のトーンや言葉のチョイス）を分析して、カテゴリ内の作品数を広げていくことが有効です。`;
+                action = `売上上位の作品群に共通する絵柄・言葉の傾向を分析し、【${escapeHtmlForAI(topTypeJa)}】カテゴリの新作ラインナップを拡充する企画`;
+            }
+
+            const meter = `<p class="text-[10px] md:text-xs text-gray-500 mt-2">📊 売上集中度　TOP1：${f1(c.top1Pct)}% / TOP3：${f1(c.top3Pct)}% / TOP5：${f1(c.top5Pct)}% / TOP10：${f1(c.top10Pct)}%（売上対象 ${c.revenueWorks}作品／分析対象 ${c.totalWorks}作品）</p>`;
+            return {bodyHtml: body, meterHtml: meter, actionText: action};
+        }
+
         function generateAIComment() {
             const commentContainer = document.getElementById('aiAnalysisComment');
             if (!commentContainer) return;
@@ -3931,8 +4006,11 @@
             const aiTypes = {};
             const aiCountries = {};
             const aiMonthlyTotal = {};
+            const aiItemTypes = {};
 
-            globalData.forEach(row => {
+            // ★Ver.1.2.1：集計元を getAnalysisData() に変更（作品フィルター＝タイトル/ID抽出・除外を反映するため）。
+            //   総合ページ（分析対象=総合）かつフィルター未設定なら、従来の globalData と同一のデータ。
+            getAnalysisData().forEach(row => {
                 const dateStr = row["From (GMT+9:00)"];
                 if (!dateStr) return;
                 const month = dateStr.substring(0, 7);
@@ -3963,6 +4041,7 @@
                 aiTotalRevenue += revenue;
                 aiTotalSalesCount += count;
                 aiItemsRev[title] = (aiItemsRev[title] || 0) + revenue;
+                aiItemTypes[title] = type;
                 aiTypes[type] = (aiTypes[type] || 0) + revenue;
 
                 if (!isPremium) {
@@ -3991,6 +4070,17 @@
             if (aiTopItem && aiItemsRev[aiTopItem] && aiTotalRevenue > 0) {
                 topItemDependence = (aiItemsRev[aiTopItem] / aiTotalRevenue) * 100;
             }
+
+            // ★Ver.1.2.1：売上集中度（アプリ側で実データから計算 → 判断 → 文章）
+            const concentration = calcSalesConcentration(aiItemsRev);
+            const concentrationLevel = judgeSalesConcentration(concentration);
+            const topItemType = aiItemTypes[aiTopItem];
+            const typeJaOf = t => t === 'Sticker' ? 'スタンプ' : t === 'Emoji' ? '絵文字' : t === 'Theme' ? '着せかえ' : t;
+            const hitAnalysis = buildHitItemAnalysis(
+                concentration, concentrationLevel, topTypeJa,
+                aiTotalRevenue > 0 ? (aiTypes[topType] / aiTotalRevenue) * 100 : 0,
+                typeJaOf(topItemType), topItemType === topType
+            );
 
             let growthHtml = "";
             const sortedMonths = Object.keys(aiMonthlyTotal).sort();
@@ -4064,7 +4154,8 @@
                     
                     <div>
                         <p class="font-bold text-[#00C300] text-base mb-1">💡 ヒット商品の傾向と分析</p>
-                        <p>通常期に最も収益の柱となっている主力のカテゴリは【<strong class="text-gray-900">${topTypeJa}</strong>】です。特に「<strong class="text-gray-900">${aiTopItem || '該当なし'}</strong>」が真のエースアイテムとして活躍しており、通常期売上の <strong class="text-gray-900">${topItemDependence.toFixed(1)}%</strong> を一人で稼ぎ出しています。季節イベントに依存しないこのアイテムの「ウケている要素（絵柄のトーンや言葉のチョイス）」を抽出し、年間通して売れる第二・第三の柱となるシリーズを展開していくことが当面の急務であり、大きなチャンスです。</p>
+                        <p>${hitAnalysis.bodyHtml}</p>
+                        ${hitAnalysis.meterHtml}
                     </div>
 
                     <div>
@@ -4077,7 +4168,7 @@
                     <div class="pt-2 border-t border-green-100">
                         <p class="font-bold text-[#00C300] text-sm mb-1 mt-2">🚀 次の一手としての推奨アクション</p>
                         <ul class="list-disc list-inside space-y-1 pl-1 text-sm text-gray-600">
-                            <li>年間通して売れている「${aiTopItem}」の世界観を踏襲した、新作スピンオフの企画</li>
+                            <li>${hitAnalysis.actionText}</li>
                             <li>「指定月の売上ランキング」を確認し、春夏秋の各季節に売れていた傾向の再現</li>
                             <li>【${topOverseasCountryJa || topCountryJa}市場】の文化やトレンドに合わせた、専用ローカライズ版のテスト開発</li>
                         </ul>
@@ -4151,6 +4242,17 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.2.1
+                            総合AI分析に売上集中度・分散度の分析を追加</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>総合AI分析に、売上集中度（TOP1／TOP3／TOP5／TOP10の売上構成比）を追加</li>
+                            <li>構成比は実データからアプリ側で算出。1位の構成比だけで「エース」と断定せず、集中・分散を数値から判断して文章を生成</li>
+                            <li>特定作品への依存度と、カテゴリ全体の強さを区別して分析できるよう改善</li>
+                            <li>総合AI分析の集計元を現在の分析対象に変更し、作品フィルター（タイトル／ID抽出・除外）に連動</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.2.0
