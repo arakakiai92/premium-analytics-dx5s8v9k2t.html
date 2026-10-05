@@ -2558,6 +2558,8 @@
             } else if (countryList.includes('JP')) {
                 countryItemRankSelect.value = 'JP';
             }
+            // Ver.1.2.4：ページ別に選択肢を切り替えるため、ここで作った全選択肢を控えておく
+            countryItemRankAllOptions = Array.from(countryItemRankSelect.options).map(o => ({value: o.value, text: o.textContent}));
 
             const lastTrendCountrySelected = categoryTrendCountrySelect.value;
             categoryTrendCountrySelect.innerHTML = '<option value="ALL">すべての国 (全国)</option>';
@@ -3271,6 +3273,7 @@
             createChart('categorySummaryChart', 'bar', catLabels, catValues, 'カテゴリ総売上', {bg: catColors, border: catBorders}, {indexAxis: 'y', layout: {padding: {right: 60}}});
 
             drawCategoryRankChart();
+            updateCountryItemRankOptions();   // Ver.1.2.4：ページに合わせて選択肢を更新してから描画
             drawCountryItemRankChart();
             drawItemTrackChart();
             updateItemDetailYears();
@@ -3996,9 +3999,67 @@
             createChart('categoryRankChart', 'bar', sortedItems, dataRev, '収益 (円)', color1, {indexAxis: 'y', layout: {padding: {right: 85}}}, dataCount);
         }
 
+        // ============================================================
+        // ★国別詳細ランキングの選択肢を、ページ（分析モード）に合わせて制御（Ver.1.2.4）
+        // ------------------------------------------------------------
+        // 選択肢の元リストは setupFilters() が生のglobalDataから作った国リスト（総合ページの既存仕様）。
+        // ランキングの集計元は getAnalysisData()（モード別）なので、データが存在しない選択肢を出さないよう、
+        //   総合      ：元リストそのまま（既存仕様を維持）
+        //   通常販売  ：Premium(定額制) を除いた通常販売の国・地域
+        //   Premium   ：Premium(定額制) のみ
+        // にoption自体を作り直す。無効になった選択値は引き継がない。
+        // タイトル／ID抽出・除外、集計ロジック、analysisMode には手を加えない。
+        const COUNTRY_RANK_PREMIUM_VALUE = 'Premium(定額制)';
+        let countryItemRankAllOptions = [];   // [{value, text}] setupFilters() で作られた全選択肢
+
+        function updateCountryItemRankOptions() {
+            try {
+                if (!countryItemRankAllOptions.length) return;   // CSV未読込
+                let allowed = countryItemRankAllOptions;
+                if (analysisMode === 'normal') {
+                    allowed = countryItemRankAllOptions.filter(o => o.value !== COUNTRY_RANK_PREMIUM_VALUE);
+                } else if (analysisMode === 'premium') {
+                    allowed = countryItemRankAllOptions.filter(o => o.value === COUNTRY_RANK_PREMIUM_VALUE);
+                }
+
+                const lastSelected = countryItemRankSelect.value;
+                const currentValues = Array.from(countryItemRankSelect.options || []).map(o => o.value).join('|');
+                const nextValues = allowed.map(o => o.value).join('|');
+                if (currentValues !== nextValues) {
+                    countryItemRankSelect.innerHTML = '';
+                    allowed.forEach(o => {
+                        const option = document.createElement('option');
+                        option.value = o.value;
+                        option.textContent = o.text;
+                        countryItemRankSelect.appendChild(option);
+                    });
+                }
+
+                // 選択値：まだ有効なら維持。無効（例：Premiumを選んだまま通常販売へ）なら JP、なければ先頭へ
+                if (allowed.some(o => o.value === lastSelected)) {
+                    countryItemRankSelect.value = lastSelected;
+                } else if (allowed.some(o => o.value === 'JP')) {
+                    countryItemRankSelect.value = 'JP';
+                } else if (allowed.length) {
+                    countryItemRankSelect.value = allowed[0].value;
+                }
+            } catch (e) {
+                console.error('国別詳細ランキングの選択肢更新でエラー:', e);
+            }
+        }
+
         function drawCountryItemRankChart() {
             const targetCountry = countryItemRankSelect.value;
-            if (!targetCountry || !currentItemsRevByCountry[targetCountry]) return;
+            if (!targetCountry) return;
+            if (!currentItemsRevByCountry[targetCountry]) {
+                // Ver.1.2.4：現在の分析対象（ページ・フィルター・期間）にこの国のデータが無い場合、
+                // 直前の別ページ／別条件のグラフを残さない（選んだ国のランキングとして誤認されるため）
+                if (charts['countryItemRankChart']) {
+                    charts['countryItemRankChart'].destroy();
+                    delete charts['countryItemRankChart'];
+                }
+                return;
+            }
 
             const itemsRev = currentItemsRevByCountry[targetCountry];
             const itemsCount = currentItemsCountByCountry[targetCountry] || {};
@@ -4600,6 +4661,16 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.2.4
+                            国別詳細ランキングのページ別選択肢を整理</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>国別詳細ランキングの選択肢をページに合わせて整理。通常販売ページではPremiumを表示しないよう修正</li>
+                            <li>Premiumページでは Premium(定額制) のみを表示。総合ページは従来どおり</li>
+                            <li>ページ切替時の選択状態も分析対象に合わせて調整（無効な選択を引き継がない）。該当データがない場合は古いグラフを残さないよう改善</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.2.3
