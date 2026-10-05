@@ -428,6 +428,7 @@
                                             id="premiumRatioChart"></canvas>
                                     </div>
                                     <div class="mt-2 grid grid-cols-2 gap-2 text-xs" id="premiumRatioSummary"></div>
+                                    <div class="mt-3 pt-3 border-t border-gray-100" id="premiumUsedItemsOverview"></div>
                                 </div>
                             </div>
                         </section>
@@ -1008,6 +1009,23 @@
                                     <!-- ▲▲ 新設ブロックおわり ▲▲ -->
                                 </div>
                                 <div class="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <!-- 0. Premium利用作品（Ver.1.2.5） -->
+                                    <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm lg:col-span-2">
+                                        <div class="flex justify-between items-center gap-2 border-b pb-2 mb-3">
+                                            <div class="min-w-0">
+                                                <h3 class="text-xs md:text-sm font-bold text-gray-700">🎫 Premium利用作品</h3>
+                                                <p class="text-[10px] text-gray-500 mt-1">
+                                                    現在の分析対象（作品フィルター・期間）で、Premiumで実際に利用された作品。分配金・件数はCSVの Revenue Share / Sales Counts の合計
+                                                </p>
+                                            </div>
+                                            <span
+                                                class="text-xs font-black text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full whitespace-nowrap"
+                                                id="premiumUsedItemsCount">0作品</span>
+                                        </div>
+                                        <div id="premiumUsedItemsArea">
+                                            <p class="text-xs text-gray-400">※CSVを読み込むと表示されます。</p>
+                                        </div>
+                                    </div>
                                     <!-- 1. Premium救済アイテム -->
                                     <div
                                         class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm h-full min-h-[520px] flex flex-col">
@@ -3529,6 +3547,11 @@
                 console.error('作品フィルター条件表示でエラー:', e);
             }
             try {
+                renderPremiumUsedItems();
+            } catch (e) {
+                console.error('Premium利用作品一覧でエラー:', e);
+            }
+            try {
                 renderSalesTypeOverview();
             } catch (e) {
                 console.error('販売種類別の状況でエラー:', e);
@@ -3540,6 +3563,70 @@
         // ============================================================
         // Premium追加分析
         // ============================================================
+
+        // ============================================================
+        // ★Premium利用作品の一覧（Ver.1.2.5）
+        // ------------------------------------------------------------
+        // 現在の分析対象のうち「Premiumで実際に利用された作品」を作品単位で一覧表示する。
+        // ・対象行：globalData のPremium行 × isRowInTitleFilter（抽出・除外・除外範囲）× 選択中の期間(selectedMonths)
+        //   → 既存の「Premiumカテゴリ月次トレンド」と同じ基準。通常販売ページ側のフィルターをPremium行にもそのまま適用する
+        // ・作品の特定：既存の救済アイテム分析と同じ「Item ID（なければタイトル）」単位。
+        //   タイトルは既存ランキングと同じ masterDataMap[Item ID] → CSVの Item Title
+        // ・金額／件数：既存コードが使っている Revenue Share（分配金）と Sales Counts をそのまま合計（独自解釈なし）
+        // 既存の判定・集計ロジックは変更せず、読み取り専用で集計する。
+        function collectPremiumUsedItems() {
+            const map = {};
+            globalData.forEach(row => {
+                const dateStr = row['From (GMT+9:00)'];
+                if (!dateStr) return;
+                if (!selectedMonths.has(dateStr.substring(0, 7))) return;
+                if (String(row['Country of Sale'] || '').trim().toLowerCase() !== 'premium') return;
+                if (!isRowInTitleFilter(row)) return;
+
+                const id = row['Item ID'] || '';
+                const title = id ? (masterDataMap[id] || row['Item Title'] || '不明') : (row['Item Title'] || '不明');
+                const key = id || title;
+                if (!map[key]) map[key] = {id: id, title: title, type: row['Type'] || '不明', revenue: 0, count: 0};
+                map[key].revenue += parseFloat(row['Revenue Share']) || 0;
+                map[key].count += parseInt(row['Sales Counts']) || 0;
+            });
+            return Object.values(map).sort((a, b) =>
+                (b.revenue - a.revenue) || (b.count - a.count) || String(a.title).localeCompare(String(b.title)));
+        }
+
+        function buildPremiumUsedItemsHtml(items) {
+            if (!items.length) {
+                return `<p class="text-xs text-gray-500">Premium利用作品：該当なし</p>`;
+            }
+            const totalRev = items.reduce((s, i) => s + i.revenue, 0);
+            const totalCount = items.reduce((s, i) => s + i.count, 0);
+            const typeJa = t => t === 'Sticker' ? 'スタンプ' : t === 'Emoji' ? '絵文字' : t === 'Theme' ? '着せかえ' : t;
+            const rows = items.map(i => `
+                <div class="flex items-start justify-between gap-3 py-2 border-b border-yellow-100 last:border-b-0">
+                    <div class="min-w-0">
+                        <p class="text-xs md:text-sm font-bold text-gray-800 break-words">${escapeHtmlForDashboard(i.title)}</p>
+                        <p class="text-[10px] text-gray-500 break-all">${i.id ? 'ID: ' + escapeHtmlForDashboard(i.id) : 'ID: なし'}　${escapeHtmlForDashboard(typeJa(i.type))}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="text-xs md:text-sm font-black text-yellow-700 whitespace-nowrap">¥${Math.floor(i.revenue).toLocaleString()}</p>
+                        <p class="text-[10px] text-gray-500 whitespace-nowrap">${i.count.toLocaleString()}件</p>
+                    </div>
+                </div>`).join('');
+            return `
+                <p class="text-[10px] md:text-xs font-bold text-gray-500 mb-1">合計：${items.length}作品／分配金 ¥${Math.floor(totalRev).toLocaleString()}／利用 ${totalCount.toLocaleString()}件</p>
+                <div class="max-h-80 overflow-y-auto overscroll-contain">${rows}</div>`;
+        }
+
+        function renderPremiumUsedItems() {
+            const items = collectPremiumUsedItems();
+            const html = buildPremiumUsedItemsHtml(items);
+            const area = document.getElementById('premiumUsedItemsArea');
+            const badge = document.getElementById('premiumUsedItemsCount');
+            const overview = document.getElementById('premiumUsedItemsOverview');
+            if (area) area.innerHTML = html;
+            if (badge) badge.textContent = `${items.length}作品`;
+            if (overview) overview.innerHTML = `<p class="text-xs font-bold text-gray-600 mb-1">🎫 Premium利用作品</p>${html}`;
+        }
 
         function renderPremiumAdditionalAnalysis() {
             // 新機能側で例外が起きても、既存の売上グラフを巻き込まないように分離する
@@ -4661,6 +4748,16 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.2.5
+                            Premium利用作品の一覧を追加</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>Premiumで実際に利用された作品を、作品タイトル・作品ID・Premium分配金・利用件数（Sales Counts）の一覧で確認できるように</li>
+                            <li>Premiumページと、総合ページの「通常販売 vs Premium 収益依存度」に表示</li>
+                            <li>作品フィルター（タイトル／ID抽出・除外・除外範囲）と選択期間に連動。該当がない場合は「該当なし」と表示</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.2.4
