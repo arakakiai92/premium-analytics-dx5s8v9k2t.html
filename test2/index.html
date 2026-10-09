@@ -409,6 +409,28 @@
                                 </div>
                             </div>
                         </section>
+                         <!-- Ver.1.2.9: 📊 月別カテゴリ割合 -->
+                         <section id="monthlyPieSection" class="lg:col-span-2 space-y-3 md:space-y-4">
+                            <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
+                                <h2 class="text-base md:text-lg font-black text-gray-700 whitespace-nowrap">📊 月別カテゴリ割合</h2>
+                                <p class="text-[10px] md:text-xs text-gray-400 pb-0.5">月ごとにどのカテゴリが売れているか、構成比の変化を確認</p>
+                            </div>
+                            <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-gray-200">
+                                <div class="flex flex-wrap items-center gap-2 md:gap-3 mb-3">
+                                    <div class="inline-flex rounded-lg border border-gray-200 overflow-hidden text-xs font-bold" role="group" aria-label="集計基準">
+                                        <button type="button" id="monthlyPieMetricCount" class="px-3 py-2 bg-[#00C300] text-white">販売件数の割合</button>
+                                        <button type="button" id="monthlyPieMetricRevenue" class="px-3 py-2 bg-white text-gray-600">売上金額の割合</button>
+                                    </div>
+                                    <div id="monthlyPieMonthWrap" class="hidden flex items-center gap-2 text-xs font-bold text-gray-600">
+                                        <label for="monthlyPieMonthSelect">表示月</label>
+                                        <select id="monthlyPieMonthSelect" class="border border-gray-300 rounded-lg px-2 py-2 text-sm bg-white"></select>
+                                    </div>
+                                </div>
+                                <div id="monthlyPieMessage" class="text-xs md:text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-4 text-center">売上CSVを読み込むと、月別のカテゴリ割合が表示されます。</div>
+                                <div id="monthlyPieGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4"></div>
+                                <p class="text-[10px] text-gray-400 mt-3">※通常販売のみの構成比です（Premiumの分配金は含みません）。マスターのカテゴリ（表記ゆれ統一済み）と作品IDで照合し、マスターに無い作品・カテゴリ空欄は「未分類」として表示します。作品フィルターは反映されます。この月別表示はCSVに含まれる全期間が対象で、上部の「対象月」選択とは独立しています。スマホでは「表示月」で月を切り替えます。</p>
+                            </div>
+                         </section>
                         <section class="lg:col-span-2 space-y-3 md:space-y-4">
                             <div class="flex items-end gap-3 border-b border-gray-200 pb-2 pt-2 md:pt-3">
                                 <h2 class="text-base md:text-lg font-black text-gray-700">🍩 通常販売 vs Premium 収益依存度</h2>
@@ -1755,7 +1777,7 @@
         }
 
         // getAnalysisData() の結果を、選択中の月だけ集計して返す（読み取り専用）
-        function aggregateDetailCategories() {
+        function aggregateDetailCategories(ignoreSelectedMonths = false) {   // Ver.1.2.9：月別円グラフはCSV全期間を対象にするため任意引数を追加
             const byMonth = {};   // { 'YYYY-MM': { rev: Map, cnt: Map } }
             const totalRev = {}, totalCnt = {};
             const unclassifiedItems = new Set();
@@ -1764,7 +1786,7 @@
                 const dateStr = row['From (GMT+9:00)'];
                 if (!dateStr) return;
                 const month = dateStr.substring(0, 7);
-                if (!selectedMonths.has(month)) return;
+                if (!ignoreSelectedMonths && !selectedMonths.has(month)) return;
                 const rev = parseFloat(row['Revenue Share']) || 0;
                 const cnt = parseInt(row['Sales Counts']) || 0;
                 let key = lookupDetailCategory(row);
@@ -1927,6 +1949,194 @@
                 unkEl.classList.toggle('hidden', unk.length === 0);
             }
         }
+
+        // ============================================================
+        // ★月別カテゴリ割合の円グラフ（Ver.1.2.9：総合ページ）
+        // ------------------------------------------------------------
+        // ・分類は Ver.1.2.8 のカテゴリ正規化・作品ID照合（aggregateDetailCategories）をそのまま再利用。
+        // ・通常販売のみ（Premium行は除外）。作品フィルターは getAnalysisData() 経由で反映。
+        // ・対象月はCSVに存在する全月（上部の「対象月」選択とは独立）。存在しない月は補完しない。
+        // ・PC/タブレット(768px以上)は全月を一覧、スマホ(768px未満)は月選択で1つ表示。
+        let monthlyPieMetric = 'count';       // 'count' | 'revenue'
+        let monthlyPieMonth = null;           // スマホで選択中の月
+        let monthlyPieLastMobile = null;      // 直近の描画時のレイアウト（幅の切替検知用）
+        let monthlyPieRenderedChartIds = [];
+
+        function monthlyPieEsc(s) {
+            return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+        }
+
+        function destroyMonthlyPieCharts() {
+            monthlyPieRenderedChartIds.forEach(id => {
+                if (charts[id]) {
+                    charts[id].destroy();
+                    delete charts[id];
+                }
+            });
+            monthlyPieRenderedChartIds = [];
+        }
+
+        function monthlyPieMonthLabel(m) {   // 'YYYY-MM' → 'YYYY年M月'
+            const [y, mo] = String(m).split('-');
+            return `${y}年${parseInt(mo, 10)}月`;
+        }
+
+        function getCsvMonths() {
+            const set = new Set();
+            (globalData || []).forEach(row => {
+                const d = row['From (GMT+9:00)'];
+                if (d) set.add(d.substring(0, 7));
+            });
+            return Array.from(set).sort();
+        }
+
+        function renderMonthlyCategoryPies() {
+            const grid = document.getElementById('monthlyPieGrid');
+            const msg = document.getElementById('monthlyPieMessage');
+            const monthWrap = document.getElementById('monthlyPieMonthWrap');
+            const select = document.getElementById('monthlyPieMonthSelect');
+            if (!grid || !msg) return;
+            destroyMonthlyPieCharts();
+            grid.innerHTML = '';
+            const showMessage = text => {
+                msg.textContent = text;
+                msg.classList.remove('hidden');
+                if (monthWrap) monthWrap.classList.add('hidden');
+            };
+            msg.classList.add('hidden');
+            const isMobile = window.innerWidth < 768;
+            monthlyPieLastMobile = isMobile;
+            if (analysisMode !== 'all') return;   // 総合ページ以外では描画しない
+
+            if (!globalData || globalData.length === 0) {
+                showMessage('売上CSVを読み込むと、月別のカテゴリ割合が表示されます。');
+                return;
+            }
+            if (!masterDataCategory || Object.keys(masterDataCategory).length === 0) {
+                showMessage('マスターCSVが未読み込み、またはマスターに「カテゴリ」列がないため、カテゴリ別の割合を表示できません。カテゴリ列を含むマスターCSVを読み込んでください。');
+                return;
+            }
+            const months = getCsvMonths();
+            if (months.length === 0) {
+                showMessage('売上CSVに月の情報が見つからないため、表示できません。');
+                return;
+            }
+            const agg = aggregateDetailCategories(true);   // 通常販売のみ・CSV全期間・作品フィルター反映
+
+            // 色はカテゴリごとに固定（CSV全期間の売上合計の大きい順）。月・集計基準が変わっても同じ色
+            const cats = getMasterCategoryValues().sort((a, b) =>
+                ((agg.totalRev[b] || 0) - (agg.totalRev[a] || 0)) ||
+                ((agg.totalCnt[b] || 0) - (agg.totalCnt[a] || 0)) ||
+                a.localeCompare(b, 'ja'));
+            const colorOf = {};
+            cats.forEach((c, i) => { colorOf[c] = DETAIL_PALETTE[i % DETAIL_PALETTE.length]; });
+            colorOf[DETAIL_KEY_UNCLASSIFIED] = '#9CA3AF';
+            const keys = cats.concat([DETAIL_KEY_UNCLASSIFIED]);
+            const labelOf = k => k === DETAIL_KEY_UNCLASSIFIED ? '未分類' : k;
+            const isCount = monthlyPieMetric === 'count';
+            const metric = isCount ? 'cnt' : 'rev';
+            const fmtVal = v => isCount ? Number(v).toLocaleString() + '件' : '¥' + Math.floor(v).toLocaleString();
+
+            // スマホ：月選択
+            if (isMobile) {
+                if (!monthlyPieMonth || !months.includes(monthlyPieMonth)) monthlyPieMonth = months[months.length - 1];   // 初期は最新月
+                if (select) {
+                    select.innerHTML = months.map(m => `<option value="${m}"${m === monthlyPieMonth ? ' selected' : ''}>${monthlyPieMonthLabel(m)}</option>`).join('');
+                    select.value = monthlyPieMonth;
+                }
+                if (monthWrap) monthWrap.classList.remove('hidden');
+            } else if (monthWrap) {
+                monthWrap.classList.add('hidden');
+            }
+            const targetMonths = isMobile ? [monthlyPieMonth] : months;
+
+            const pending = [];
+            let cards = '';
+            targetMonths.forEach(m => {
+                const bucket = agg.byMonth[m];
+                const entries = keys.map(k => ({key: k, value: bucket ? (bucket[metric].get(k) || 0) : 0})).filter(x => x.value > 0);
+                const total = entries.reduce((s, x) => s + x.value, 0);
+                const title = monthlyPieMonthLabel(m);
+                const canvasId = 'monthlyPie_' + m;
+                if (total <= 0) {
+                    cards += `<div class="border border-gray-200 rounded-xl p-3 md:p-4 min-w-0"><h3 class="text-sm font-black text-gray-700 mb-2">${title}</h3><p class="text-xs text-gray-400 py-10 text-center">この月は通常販売の集計対象データがありません（${isCount ? '0件' : '¥0'}）。</p></div>`;
+                    return;
+                }
+                const legend = entries.map(x => {
+                    const pct = (x.value / total * 100).toFixed(1);
+                    return `<li class="flex items-center gap-2 py-0.5 min-w-0"><span class="inline-block w-3 h-3 rounded-sm flex-shrink-0" style="background:${colorOf[x.key]}"></span><span class="font-bold text-gray-700 break-words min-w-0 flex-1">${monthlyPieEsc(labelOf(x.key))}</span><span class="text-gray-600 whitespace-nowrap">${pct}%<span class="monthly-pie-amt" style="${numbersHidden ? 'filter: blur(6px);' : ''}">（${fmtVal(x.value)}）</span></span></li>`;
+                }).join('');
+                cards += `<div class="border border-gray-200 rounded-xl p-3 md:p-4 min-w-0">
+                    <div class="flex items-baseline justify-between gap-2 mb-2"><h3 class="text-sm font-black text-gray-700">${title}</h3><span class="text-[11px] text-gray-500 monthly-pie-amt" style="${numbersHidden ? 'filter: blur(6px);' : ''}">合計 ${fmtVal(total)}</span></div>
+                    <div style="position:relative; height:${isMobile ? 300 : 260}px; width:100%;"><canvas id="${canvasId}"></canvas></div>
+                    <ul class="mt-3 text-[11px] md:text-xs list-none p-0 m-0">${legend}</ul></div>`;
+                pending.push({canvasId, entries, total});
+            });
+            grid.innerHTML = cards;
+
+            pending.forEach(({canvasId, entries, total}) => {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                if (charts[canvasId]) charts[canvasId].destroy();
+                charts[canvasId] = new Chart(canvas.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: entries.map(x => labelOf(x.key)),
+                        datasets: [{data: entries.map(x => x.value), backgroundColor: entries.map(x => colorOf[x.key]), borderColor: '#ffffff', borderWidth: 1}]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            pieLabelsLine: false,   // 既存の引き出し線ラベルは使わない（小さな円で重なるため）
+                            legend: {display: false},   // 凡例はHTML側（はみ出し防止）
+                            tooltip: {callbacks: {label: ctx => {
+                                const v = ctx.parsed;
+                                return `${ctx.label}: ${(v / total * 100).toFixed(1)}%（${fmtVal(v)}）`;
+                            }}},
+                            datalabels: {
+                                display: ctx => (ctx.dataset.data[ctx.dataIndex] / total) >= 0.05,   // 5%以上のみ割合を表示
+                                formatter: v => (v / total * 100).toFixed(1) + '%',
+                                color: '#ffffff',
+                                textStrokeColor: 'rgba(0, 0, 0, 0.45)',
+                                textStrokeWidth: 3,
+                                font: {weight: 'bold', size: isMobile ? 11 : 10}
+                            }
+                        }
+                    },
+                    plugins: [whiteBackgroundPlugin]
+                });
+                monthlyPieRenderedChartIds.push(canvasId);
+            });
+        }
+
+        (function initMonthlyPieControls() {
+            const setMetric = metric => {
+                monthlyPieMetric = metric;
+                const c = document.getElementById('monthlyPieMetricCount'), r = document.getElementById('monthlyPieMetricRevenue');
+                const on = 'px-3 py-2 bg-[#00C300] text-white', off = 'px-3 py-2 bg-white text-gray-600';
+                if (c) c.className = metric === 'count' ? on : off;
+                if (r) r.className = metric === 'revenue' ? on : off;
+                try { renderMonthlyCategoryPies(); } catch (e) { console.error('月別カテゴリ割合でエラー:', e); }
+            };
+            const c = document.getElementById('monthlyPieMetricCount'), r = document.getElementById('monthlyPieMetricRevenue');
+            const sel = document.getElementById('monthlyPieMonthSelect');
+            if (c) c.addEventListener('click', () => setMetric('count'));
+            if (r) r.addEventListener('click', () => setMetric('revenue'));
+            if (sel) sel.addEventListener('change', () => {
+                monthlyPieMonth = sel.value;
+                try { renderMonthlyCategoryPies(); } catch (e) { console.error('月別カテゴリ割合でエラー:', e); }
+            });
+            // 画面幅の変更・回転：PC/タブレット表示とスマホ表示の境界（768px）をまたいだときだけ再描画
+            let timer = null;
+            window.addEventListener('resize', () => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    if (monthlyPieLastMobile === null || monthlyPieLastMobile === (window.innerWidth < 768)) return;
+                    try { renderMonthlyCategoryPies(); } catch (e) { console.error('月別カテゴリ割合でエラー:', e); }
+                }, 150);
+            });
+        })();
 
         // ============================================================
         // ★作品ID履歴・予測入力（Ver.1.2.3）
@@ -3879,6 +4089,11 @@
             } catch (e) {
                 console.error('詳細カテゴリ別グラフでエラー:', e);
             }
+            try {
+                renderMonthlyCategoryPies();   // Ver.1.2.9：総合ページの月別カテゴリ割合
+            } catch (e) {
+                console.error('月別カテゴリ割合でエラー:', e);
+            }
             generateAIComment();
         }
 
@@ -5141,6 +5356,16 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.2.9
+                            総合ページに「月別カテゴリ割合」の円グラフを追加</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>CSVの最古月〜最新月について、通常販売のカテゴリ構成比を月ごとの円グラフで表示（「販売件数の割合」「売上金額の割合」を切替、初期は販売件数）</li>
+                            <li>PC・タブレットは全月を一覧表示、スマホ（768px未満）は月選択で1か月を大きく表示（初期は最新月）。画面幅の変更・回転に追従</li>
+                            <li>カテゴリはVer.1.2.8のマスター照合・表記統一をそのまま利用。Premiumの分配金は含めず、作品フィルターは反映。マスター未読込時は理由を案内</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.2.8
