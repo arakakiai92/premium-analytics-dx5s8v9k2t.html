@@ -248,7 +248,7 @@
                 <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-gray-200 mb-4 md:mb-6"
                     id="currentFilterSummaryCard">
                     <p class="text-xs md:text-sm font-bold text-gray-600 mb-2 flex items-center gap-1.5">🔎 現在の分析対象</p>
-                    <div class="grid grid-cols-3 gap-2 md:gap-4 text-center">
+                    <div class="grid grid-cols-3 gap-2 md:gap-4 text-center" id="filterSummaryGrid">
                         <div>
                             <p class="text-base md:text-lg font-black text-gray-800" id="filterSummaryItemCount">0作品</p>
                             <p class="text-[10px] md:text-xs text-gray-400">対象作品数</p>
@@ -257,7 +257,7 @@
                             <p class="text-base md:text-lg font-black text-gray-800" id="filterSummaryRevenue">¥0</p>
                             <p class="text-[10px] md:text-xs text-gray-400">分配金総額</p>
                         </div>
-                        <div>
+                        <div id="filterSummarySalesCountBlock">
                             <p class="text-base md:text-lg font-black text-gray-800" id="filterSummarySalesCount">0件</p>
                             <p class="text-[10px] md:text-xs text-gray-400">売上件数</p>
                         </div>
@@ -406,45 +406,6 @@
                                     </div>
                                     <p class="text-[10px] text-gray-400 mt-2">
                                         ※読み込み済みCSVの月のみ表示します（未読込の月は補完しません）。月数が多い場合は、グラフ内を左右にスクロールできます。</p>
-                                </div>
-                                <!-- Ver.1.2.7：詳細カテゴリ別グラフ（詳細カテゴリ入りマスター読み込み時のみ自動表示） -->
-                                <div id="detailCategorySection" class="hidden lg:col-span-2 space-y-4 md:space-y-6">
-                                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                                        <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-2 mb-4">
-                                            <h2 class="text-sm md:text-base font-bold text-gray-700">🗂️ 詳細カテゴリ別・月間売上推移</h2>
-                                            <button
-                                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
-                                                onclick="downloadChart('detailCategoryRevenueChart', '詳細カテゴリ別月間売上推移')">
-                                                📥 画像保存
-                                            </button>
-                                        </div>
-                                        <div id="detailCategorySummaryRevenue" class="text-[11px] md:text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-3"></div>
-                                        <div class="overflow-x-auto w-full">
-                                            <div id="detailCategoryRevenueInner" style="height: 340px; min-width: 0;">
-                                                <canvas id="detailCategoryRevenueChart"></canvas>
-                                            </div>
-                                        </div>
-                                        <p class="text-[10px] text-gray-400 mt-2">
-                                            ※CSVの「Revenue Share」を作品ID（Item ID）でマスターのカテゴリと照合して月別に合算しています。マスターに無い作品・カテゴリが空欄の作品は「未分類」、Premium分配金は通常販売と意味が異なるため「Premium（別枠）」として、カテゴリには振り分けていません。</p>
-                                    </div>
-                                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                                        <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-2 mb-4">
-                                            <h2 class="text-sm md:text-base font-bold text-gray-700">🗂️ 詳細カテゴリ別・月間販売数推移</h2>
-                                            <button
-                                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
-                                                onclick="downloadChart('detailCategoryCountChart', '詳細カテゴリ別月間販売数推移')">
-                                                📥 画像保存
-                                            </button>
-                                        </div>
-                                        <div id="detailCategorySummaryCount" class="text-[11px] md:text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-3"></div>
-                                        <div class="overflow-x-auto w-full">
-                                            <div id="detailCategoryCountInner" style="height: 340px; min-width: 0;">
-                                                <canvas id="detailCategoryCountChart"></canvas>
-                                            </div>
-                                        </div>
-                                        <p class="text-[10px] text-gray-400 mt-2">
-                                            ※既存の「月別販売件数」と同じく、CSVの「Sales Counts」を作品IDで照合して合算しています（Premium行は既存の合計に含まれるため「Premium（別枠）」として分けて表示。Premiumの利用件数を意味するものではありません）。</p>
-                                    </div>
                                 </div>
                             </div>
                         </section>
@@ -849,6 +810,46 @@
                                         </div>
                                     </div>
                                     <p class="text-[10px] text-gray-400 mt-2 md:hidden">※スマホではグラフを左右にスクロールできます。</p>
+                                </div>
+                                <!-- Ver.1.2.8：作品系統別グラフ（通常販売ページのみ・詳細カテゴリ入りマスター読み込み時のみ自動表示） -->
+                                <div id="detailCategorySection" class="hidden lg:col-span-2 space-y-4 md:space-y-6">
+                                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                                        <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-2 mb-4">
+                                            <h2 class="text-sm md:text-base font-bold text-gray-700">🗂️ 作品系統別・月間売上推移</h2>
+                                            <button
+                                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                                onclick="downloadChart('detailCategoryRevenueChart', '作品系統別月間売上推移')">
+                                                📥 画像保存
+                                            </button>
+                                        </div>
+                                        <div id="detailCategoryUnknownNote" class="hidden text-[11px] md:text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3"></div>
+                                        <div id="detailCategorySummaryRevenue" class="text-[11px] md:text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-3"></div>
+                                        <div class="overflow-x-auto w-full">
+                                            <div id="detailCategoryRevenueInner" style="height: 340px; min-width: 0;">
+                                                <canvas id="detailCategoryRevenueChart"></canvas>
+                                            </div>
+                                        </div>
+                                        <p class="text-[10px] text-gray-400 mt-2">
+                                            ※CSVの「Revenue Share」を作品ID（Item ID）でマスターのカテゴリと照合して月別に合算しています。マスターに無い作品・カテゴリが空欄の作品は「未分類」とし、系統には振り分けていません。通常販売のみの集計で、Premiumの分配金は含みません。</p>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                                        <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-2 mb-4">
+                                            <h2 class="text-sm md:text-base font-bold text-gray-700">🗂️ 作品系統別・月間販売数推移</h2>
+                                            <button
+                                                class="text-xs font-bold text-[#00C300] hover:text-[#009900] flex items-center gap-1 active:scale-95 transition"
+                                                onclick="downloadChart('detailCategoryCountChart', '作品系統別月間販売数推移')">
+                                                📥 画像保存
+                                            </button>
+                                        </div>
+                                        <div id="detailCategorySummaryCount" class="text-[11px] md:text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-3"></div>
+                                        <div class="overflow-x-auto w-full">
+                                            <div id="detailCategoryCountInner" style="height: 340px; min-width: 0;">
+                                                <canvas id="detailCategoryCountChart"></canvas>
+                                            </div>
+                                        </div>
+                                        <p class="text-[10px] text-gray-400 mt-2">
+                                            ※CSVの「Sales Counts」を作品IDで照合して合算しています（通常販売のみ）。</p>
+                                    </div>
                                 </div>
                             </div>
                         </section>
@@ -1537,6 +1538,17 @@
             itemCountEl.textContent = `${uniqueTitles.size.toLocaleString()}作品`;
             revenueEl.textContent = `¥${Math.floor(totalRevenue).toLocaleString()}`;
             salesCountEl.textContent = `${totalSalesCount.toLocaleString()}件`;
+
+            // Ver.1.2.8：Premiumの Sales Counts は実利用数を表さないため、Premiumページでは「売上件数」を表示しない
+            //（このカードは全ページ共通なので、総合・通常販売ページでは従来どおり表示）
+            const isPremiumPage = analysisMode === 'premium';
+            const countBlock = document.getElementById('filterSummarySalesCountBlock');
+            const summaryGrid = document.getElementById('filterSummaryGrid');
+            if (countBlock) countBlock.classList.toggle('hidden', isPremiumPage);
+            if (summaryGrid) {
+                summaryGrid.classList.toggle('grid-cols-3', !isPremiumPage);
+                summaryGrid.classList.toggle('grid-cols-2', isPremiumPage);
+            }
         }
         // ============================================================
         // ★「🧩 販売種類別の状況」「📈 月別販売件数」（Ver.1.1.0）
@@ -1662,69 +1674,103 @@
         });
 
         // ============================================================
-        // ★詳細カテゴリ別グラフ（Ver.1.2.7）
+        // ★作品系統別グラフ（Ver.1.2.8：通常販売ページ限定／カテゴリ表記の正規化）
         // ------------------------------------------------------------
-        // ・マスターCSVの「カテゴリ」列を作品ID（正規化済み）で保持し、読み込まれたマスターの実データから
-        //   「3区分より細かいカテゴリがあるか」を自動判定する（手動の切替は無い）。
-        // ・3区分（スタンプ／絵文字／着せかえ[着せ替え]）しか無い、またはマスター未読込の場合は何も表示せず、
-        //   既存グラフ・既存集計には一切手を加えない（このブロックは読み取り専用）。
-        // ・集計元は getAnalysisData()（抽出・除外・分析モード反映済み）＋ selectedMonths。独自に生データは走査しない。
-        // ・マスターに無い作品／カテゴリ空欄は「未分類」、Premium行は「Premium（別枠）」とし、カテゴリには振り分けない。
-        const DETAIL_BASIC_CATEGORY_NAMES = new Set(['スタンプ', '絵文字', '着せかえ', '着せ替え', 'sticker', 'emoji', 'theme']);
+        // ・マスターの「カテゴリ」原文は masterDataCategory にそのまま保持し、集計・表示の段階でだけ
+        //   normalizeCategoryName() で表記ゆれを統一する（原文・作品IDは変更しない）。
+        // ・対応表にないカテゴリは推測で分類せず、原文（前後空白除去のみ）のまま独立カテゴリとして集計する。
+        // ・3区分（スタンプ／絵文字／着せかえ）以外が1つでもあれば自動で表示。通常販売ページ以外では表示しない。
+        // ・集計元は getAnalysisData()（通常販売ページではPremium行を含まない）＋ selectedMonths。
+        const CATEGORY_ALIAS_TABLE = {
+            'スタンプ': 'スタンプ',
+            '動くスタンプ': 'アニメーションスタンプ',
+            'アニメスタンプ': 'アニメーションスタンプ',
+            'アニメーションスタンプ': 'アニメーションスタンプ',
+            'エフェクトスタンプ': 'エフェクトスタンプ',
+            '絵文字': '絵文字',
+            '動く絵文字': 'アニメーション絵文字',
+            'アニメ絵文字': 'アニメーション絵文字',
+            'アニメーション絵文字': 'アニメーション絵文字',
+            '着せかえ': '着せかえ',
+            '着せ替え': '着せかえ',
+            'BIGスタンプ': 'BIGスタンプ',
+            'メッセージスタンプ': 'メッセージスタンプ',
+            'ポップアップスタンプ': 'ポップアップスタンプ',
+            // 既存コード（CSV読み込み時のType）にある英語表記との互換
+            'sticker': 'スタンプ',
+            'emoji': '絵文字',
+            'theme': '着せかえ'
+        };
+        const CATEGORY_ALIAS_LOOKUP = {};
+        Object.keys(CATEGORY_ALIAS_TABLE).forEach(k => { CATEGORY_ALIAS_LOOKUP[k.normalize('NFKC').toLowerCase()] = CATEGORY_ALIAS_TABLE[k]; });
+        const DETAIL_BASIC_CATEGORY_NAMES = new Set(['スタンプ', '絵文字', '着せかえ']);   // 統一表示名での3区分
         const DETAIL_KEY_UNCLASSIFIED = '__unclassified__';
-        const DETAIL_KEY_PREMIUM = '__premium__';
         const DETAIL_PALETTE = ['#EC4899', '#8B5CF6', '#6366F1', '#10B981', '#F59E0B', '#3B82F6', '#EF4444', '#14B8A6', '#84CC16', '#F97316', '#A855F7', '#06B6D4'];
 
-        function isBasicCategoryName(name) {
-            return DETAIL_BASIC_CATEGORY_NAMES.has(String(name == null ? '' : name).normalize('NFKC').trim().toLowerCase());
+        // マスターのカテゴリ原文 → アプリ内の統一表示名（対応表に無ければ原文のまま）
+        function normalizeCategoryName(raw) {
+            const t = String(raw == null ? '' : raw).trim();
+            if (!t) return '';
+            const key = t.normalize('NFKC').toLowerCase();
+            return Object.prototype.hasOwnProperty.call(CATEGORY_ALIAS_LOOKUP, key) ? CATEGORY_ALIAS_LOOKUP[key] : t;
         }
 
-        // 読み込み済みマスターに登録されているカテゴリ値（記載のまま・重複なし）
+        function isKnownCategoryName(raw) {
+            const t = String(raw == null ? '' : raw).trim();
+            return !!t && Object.prototype.hasOwnProperty.call(CATEGORY_ALIAS_LOOKUP, t.normalize('NFKC').toLowerCase());
+        }
+
+        // 読み込み済みマスターのカテゴリ（統一表示名・重複なし）
         function getMasterCategoryValues() {
             const set = new Set();
             Object.keys(masterDataCategory || {}).forEach(id => {
-                const c = masterDataCategory[id];
+                const c = normalizeCategoryName(masterDataCategory[id]);
                 if (c) set.add(c);
+            });
+            return Array.from(set);
+        }
+
+        // 対応表にないカテゴリの原文（確認用）
+        function getUnknownMasterCategories() {
+            const set = new Set();
+            Object.keys(masterDataCategory || {}).forEach(id => {
+                const raw = String(masterDataCategory[id] || '').trim();
+                if (raw && !isKnownCategoryName(raw)) set.add(raw);
             });
             return Array.from(set);
         }
 
         // 3区分以外のカテゴリが1つでもあれば「詳細カテゴリあり」
         function hasDetailedMasterCategories() {
-            return getMasterCategoryValues().some(c => !isBasicCategoryName(c));
+            return getMasterCategoryValues().some(c => !DETAIL_BASIC_CATEGORY_NAMES.has(c));
         }
 
+        // 作品ID照合（正規化済みID）と、カテゴリ名の正規化は別処理
         function lookupDetailCategory(row) {
             const id = normalizeItemId(row['Item ID']);
-            if (id && Object.prototype.hasOwnProperty.call(masterDataCategory, id) && masterDataCategory[id]) {
-                return masterDataCategory[id];
+            if (id && Object.prototype.hasOwnProperty.call(masterDataCategory, id)) {
+                return normalizeCategoryName(masterDataCategory[id]) || null;
             }
             return null;
         }
 
         // getAnalysisData() の結果を、選択中の月だけ集計して返す（読み取り専用）
         function aggregateDetailCategories() {
-            const byMonth = {};   // { 'YYYY-MM': { rev: {key: n}, cnt: {key: n} } }
+            const byMonth = {};   // { 'YYYY-MM': { rev: Map, cnt: Map } }
             const totalRev = {}, totalCnt = {};
             const unclassifiedItems = new Set();
             getAnalysisData().forEach(row => {
+                if (isPremiumRow(row)) return;   // 通常販売ページでは到達しないが、Premiumを系統別に混ぜない保険
                 const dateStr = row['From (GMT+9:00)'];
                 if (!dateStr) return;
                 const month = dateStr.substring(0, 7);
                 if (!selectedMonths.has(month)) return;
                 const rev = parseFloat(row['Revenue Share']) || 0;
                 const cnt = parseInt(row['Sales Counts']) || 0;
-                let key;
-                if (isPremiumRow(row)) {
-                    key = DETAIL_KEY_PREMIUM;
-                } else {
-                    const cat = lookupDetailCategory(row);
-                    if (cat) {
-                        key = cat;
-                    } else {
-                        key = DETAIL_KEY_UNCLASSIFIED;
-                        unclassifiedItems.add(normalizeItemId(row['Item ID']) || ('title:' + (row['Item Title'] || '')));
-                    }
+                let key = lookupDetailCategory(row);
+                if (!key) {
+                    key = DETAIL_KEY_UNCLASSIFIED;
+                    unclassifiedItems.add(normalizeItemId(row['Item ID']) || ('title:' + (row['Item Title'] || '')));
                 }
                 if (!byMonth[month]) byMonth[month] = {rev: new Map(), cnt: new Map()};
                 byMonth[month].rev.set(key, (byMonth[month].rev.get(key) || 0) + rev);
@@ -1816,8 +1862,8 @@
         function renderDetailCategoryCharts() {
             const section = document.getElementById('detailCategorySection');
             if (!section) return;
-            // 詳細カテゴリが無い（マスター未読込／3区分のみ）、またはCSV未読込なら何も表示しない
-            if (!globalData || globalData.length === 0 || !hasDetailedMasterCategories()) {
+            // 通常販売ページ以外／CSV未読込／詳細カテゴリ無し（マスター未読込・3区分のみ）なら何も表示しない
+            if (analysisMode !== 'normal' || !globalData || globalData.length === 0 || !hasDetailedMasterCategories()) {
                 hideDetailCategorySection();
                 return;
             }
@@ -1829,7 +1875,7 @@
             }
             section.classList.remove('hidden');
 
-            // 系列の並び・色：マスターのカテゴリ値を売上合計の大きい順（同額は販売数→名前順）。両グラフで色を揃える
+            // 系列の並び・色：売上合計の大きい順（同額は販売数→名前順）。両グラフで色を揃える
             const cats = getMasterCategoryValues().sort((a, b) =>
                 ((agg.totalRev[b] || 0) - (agg.totalRev[a] || 0)) ||
                 ((agg.totalCnt[b] || 0) - (agg.totalCnt[a] || 0)) ||
@@ -1840,10 +1886,8 @@
                 styleOf[c] = {bg: detailColor(hex, 0.85), border: detailColor(hex, 1)};
             });
             styleOf[DETAIL_KEY_UNCLASSIFIED] = {bg: 'rgba(156, 163, 175, 0.85)', border: 'rgba(156, 163, 175, 1)'};
-            styleOf[DETAIL_KEY_PREMIUM] = {bg: 'rgba(234, 179, 8, 0.85)', border: 'rgba(234, 179, 8, 1)'};
-            const labelOf = k => k === DETAIL_KEY_UNCLASSIFIED ? '未分類（マスター未登録・カテゴリ空欄）'
-                : k === DETAIL_KEY_PREMIUM ? 'Premium（別枠・カテゴリ対象外）' : k;
-            const keys = cats.concat([DETAIL_KEY_UNCLASSIFIED, DETAIL_KEY_PREMIUM]);
+            const labelOf = k => k === DETAIL_KEY_UNCLASSIFIED ? '未分類（マスター未登録・カテゴリ空欄）' : k;
+            const keys = cats.concat([DETAIL_KEY_UNCLASSIFIED]);
 
             const buildSeries = (metric, totals) => keys
                 .filter(k => (totals[k] || 0) !== 0)   // 選択期間に数値が無い区分は凡例に出さない
@@ -1857,17 +1901,13 @@
             drawDetailCategoryChart('detailCategoryRevenueChart', 'detailCategoryRevenueInner', months, buildSeries('rev', agg.totalRev), true);
             drawDetailCategoryChart('detailCategoryCountChart', 'detailCategoryCountInner', months, buildSeries('cnt', agg.totalCnt), false);
 
-            // 全体との差（未分類・Premium）を利用者が把握できるように表示
-            const sum = totals => keys.reduce((s, k) => s + (totals[k] || 0), 0);
             const catSum = totals => cats.reduce((s, k) => s + (totals[k] || 0), 0);
             const yen = v => '¥' + Math.floor(v).toLocaleString();
             const num = v => Number(v).toLocaleString() + '件';
             const summarize = (totals, f) => {
-                const total = sum(totals);
                 const un = totals[DETAIL_KEY_UNCLASSIFIED] || 0;
-                const pr = totals[DETAIL_KEY_PREMIUM] || 0;
-                let t = `全体 ${f(total)} ＝ 詳細カテゴリ合計 ${f(catSum(totals))} ＋ 未分類 ${f(un)} ＋ Premium（別枠） ${f(pr)}`;
-                if (un !== 0) t += `　⚠ 未分類 ${agg.unclassifiedItemCount}作品分はマスターにカテゴリが無いため、詳細カテゴリには含まれていません。`;
+                let t = `全体 ${f(catSum(totals) + un)} ＝ 系統別合計 ${f(catSum(totals))} ＋ 未分類 ${f(un)}`;
+                if (un !== 0) t += `　⚠ 未分類 ${agg.unclassifiedItemCount}作品分はマスターに系統が無いため、系統別には含まれていません。`;
                 return t;
             };
             const setText = (id, text) => {
@@ -1878,6 +1918,14 @@
             };
             setText('detailCategorySummaryRevenue', summarize(agg.totalRev, yen));
             setText('detailCategorySummaryCount', summarize(agg.totalCnt, num));
+
+            // 対応表にないカテゴリ（原文のまま独立集計）を確認できるように表示
+            const unk = getUnknownMasterCategories();
+            const unkEl = document.getElementById('detailCategoryUnknownNote');
+            if (unkEl) {
+                unkEl.textContent = unk.length ? `対応表にないカテゴリ（推測で統合せず、原文のまま独立カテゴリとして集計）：${unk.join('、')}` : '';
+                unkEl.classList.toggle('hidden', unk.length === 0);
+            }
         }
 
         // ============================================================
@@ -5093,6 +5141,16 @@
             </summary>
             <div class="px-5 pb-5 pt-1 border-t border-gray-100">
                 <div class="space-y-4 text-xs md:text-sm text-gray-600">
+
+                    <div>
+                        <div class="font-bold text-gray-800 mb-1">Ver.1.2.8
+                            作品系統別グラフを通常販売ページへ移設・カテゴリ表記の統一・Premiumの売上件数表示を削除</div>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>作品系統別（詳細カテゴリ別）の月間売上・販売数グラフを「🛍️ 通常販売」ページの「カテゴリ・時系列分析」に移設。総合・Premiumページには表示しない（Premium分配金は混ぜない）</li>
+                            <li>マスターのカテゴリ表記ゆれを集計・表示時に統一（動くスタンプ／アニメスタンプ→アニメーションスタンプ、動く絵文字／アニメ絵文字→アニメーション絵文字、着せ替え→着せかえ）。エフェクトスタンプ等は独立カテゴリ、対応表にないカテゴリは原文のまま独立集計し一覧表示。マスターの原文は変更しない</li>
+                            <li>Premiumページの「🔎 現在の分析対象」から「売上件数」を非表示（対象作品数・分配金総額は維持。総合・通常販売では従来どおり表示）</li>
+                        </ul>
+                    </div>
 
                     <div>
                         <div class="font-bold text-gray-800 mb-1">Ver.1.2.7
