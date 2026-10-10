@@ -4696,6 +4696,20 @@
             return {premiumRows: premiumRows, itemCount: keys.size};
         }
 
+        // 「今月」＝表示月プルダウンの選択月（実際のカレンダー上の今月ではない）、「先月」＝その前月。
+        // どちらも同じ集計（countPremiumUsedItemsInMonth）で、データが無い月は「0作品」と誤認させない。
+        function buildPremiumUsedMonthLine(label, month) {
+            const result = month ? countPremiumUsedItemsInMonth(month) : {premiumRows: 0, itemCount: 0};
+            const monthLabel = month ? escapeHtmlForDashboard(month) : '';
+            if (result.premiumRows === 0) {
+                return {hasCount: false, html: `${label}のデータがありません${monthLabel ? `<span class="text-[10px] text-gray-400 ml-1">（${monthLabel}）</span>` : ''}`};
+            }
+            if (result.itemCount === 0) {
+                return {hasCount: false, html: `${label}（${monthLabel}）は、現在の作品フィルター条件に該当するPremium作品がありません`};
+            }
+            return {hasCount: true, html: `${label}（${monthLabel}）は<span class="font-black text-yellow-700 mx-0.5">${result.itemCount.toLocaleString()}作品</span>が利用されました`};
+        }
+
         function renderPremiumPrevMonthUsedNote() {
             const el = document.getElementById('premiumPrevMonthUsedNote');
             if (!el) return;
@@ -4705,20 +4719,13 @@
                 el.innerHTML = '';
                 return;
             }
-            const prevMonth = getPreviousMonthKey(targetMonth);
-            const result = prevMonth ? countPremiumUsedItemsInMonth(prevMonth) : {premiumRows: 0, itemCount: 0};
-            const monthLabel = prevMonth ? escapeHtmlForDashboard(prevMonth) : '';
-            let html;
-            if (result.premiumRows === 0) {
-                // 前月のPremiumデータが無い場合は「0作品」と誤認させない
-                html = `先月のデータがありません${monthLabel ? `<span class="text-[10px] text-gray-400 ml-1">（${monthLabel}）</span>` : ''}`;
-            } else if (result.itemCount === 0) {
-                html = `先月（${monthLabel}）は、現在の作品フィルター条件に該当するPremium作品がありません`;
-            } else {
-                html = `先月（${monthLabel}）は<span class="font-black text-yellow-700 mx-0.5">${result.itemCount.toLocaleString()}作品</span>が利用されました`
-                    + `<span class="block text-[10px] text-gray-400 font-normal mt-0.5">※Premium分配金データに登場した作品数（重複除外）。利用回数・利用者数ではありません</span>`;
-            }
-            el.innerHTML = html;
+            const current = buildPremiumUsedMonthLine('今月', targetMonth);
+            const prev = buildPremiumUsedMonthLine('先月', getPreviousMonthKey(targetMonth));
+            // 注記は今月・先月に共通の説明（作品数が表示されている場合のみ）
+            const note = (current.hasCount || prev.hasCount)
+                ? `<span class="block text-[10px] text-gray-400 font-normal mt-1">※Premium分配金データに登場した作品数（重複除外）。利用回数・利用者数ではありません</span>`
+                : '';
+            el.innerHTML = `<div>${current.html}</div><div class="mt-1">${prev.html}</div>${note}`;
             el.classList.remove('hidden');
         }
 
