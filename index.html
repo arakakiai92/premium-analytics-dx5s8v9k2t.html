@@ -446,6 +446,14 @@
                                             onclick="downloadChart('premiumRatioChart', 'Premium収益依存度')">📥
                                             保存</button>
                                     </div>
+                                    <div class="flex items-center justify-end gap-2 mb-3">
+                                        <span class="text-xs font-bold text-gray-500 whitespace-nowrap">集計期間:</span>
+                                        <select
+                                            class="p-2 border border-gray-300 rounded-lg bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer focus:ring-[#00C300] focus:border-[#00C300]"
+                                            id="premiumRatioPeriodSelect" aria-label="収益依存度の集計期間">
+                                            <option value="all" selected>全期間</option>
+                                        </select>
+                                    </div>
                                     <div class="chart-container" style="height: 250px;"><canvas
                                             id="premiumRatioChart"></canvas>
                                     </div>
@@ -1361,6 +1369,7 @@
         let targetMonthRankLimit = 10;
         const premiumTargetMonthSelect = document.getElementById('premiumTargetMonthSelect');
         const premiumTargetRankLimitSelect = document.getElementById('premiumTargetRankLimitSelect');
+        const premiumRatioPeriodSelect = document.getElementById('premiumRatioPeriodSelect');
         const targetRevenueInput = document.getElementById('targetRevenueInput');
         const currentRevenueInput = document.getElementById('currentRevenueInput');
         const categoryTrendCountrySelect = document.getElementById('categoryTrendCountrySelect');
@@ -2940,6 +2949,8 @@
         premiumTargetMonthSelect.addEventListener('change', () => {drawPremiumTargetMonthCharts(); drawPremiumRescuedItems();});
         // 表示件数の切替はランキングだけを再描画（月・フィルター条件はそのまま）
         premiumTargetRankLimitSelect.addEventListener('change', () => drawPremiumTargetItemRankChart());
+        // 収益依存度の集計期間（全期間／各月）：ドーナツ・金額・構成比をまとめて再描画
+        premiumRatioPeriodSelect.addEventListener('change', () => renderPremiumRatioSection());
         categoryTrendCountrySelect.addEventListener('change', () => {renderDashboard();});
         monthlyRankMonthSelect.addEventListener('change', () => {drawMonthlyRankCharts();});
 
@@ -3196,6 +3207,23 @@
             } else if (availableMonths.length > 0) {
                 monthlyRankMonthSelect.value = availableMonths[availableMonths.length - 1];
             }
+
+            // 「通常販売 vs Premium 収益依存度」の集計期間：全期間＋CSVに存在する各月（新しい月から）
+            if (premiumRatioPeriodSelect) {
+                const lastRatioPeriod = premiumRatioPeriodSelect.value;
+                premiumRatioPeriodSelect.innerHTML = '';
+                const allOption = document.createElement('option');
+                allOption.value = 'all';
+                allOption.textContent = '全期間';
+                premiumRatioPeriodSelect.appendChild(allOption);
+                sortedAvailableMonthsDesc.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m;
+                    option.textContent = m;
+                    premiumRatioPeriodSelect.appendChild(option);
+                });
+                premiumRatioPeriodSelect.value = (lastRatioPeriod !== 'all' && sortedAvailableMonthsDesc.includes(lastRatioPeriod)) ? lastRatioPeriod : 'all';
+            }
         }
 
         function updateFilterUI() {
@@ -3210,6 +3238,57 @@
                     btn.classList.add('bg-white', 'text-gray-500', 'border-gray-300');
                 }
             });
+        }
+
+        // ============================================================
+        // ★「🍩 通常販売 vs Premium 収益依存度」（集計期間：全期間／各月）
+        // ------------------------------------------------------------
+        // 収益の定義は従来の収益依存度と同じ：Revenue Share の合計。
+        //   Premium分配金 = Country of Sale が premium の行（isPremiumRow）、通常販売 = 総額 − Premium（二重計上なし）。
+        //   Sales Counts（販売件数）や Sales（売上総額）は使わない。
+        // 対象行は getAnalysisData()（分析モード・作品フィルター）。期間だけを
+        //   「全期間」＝読み込み済みCSVのすべて／「月」＝その月のみ に置き換える。
+        //   上部の「対象月」(selectedMonths) とは独立（月別カテゴリ割合セクションと同じ扱い）。
+        function computePremiumRatioTotals(period) {
+            let totalRev = 0;
+            let premiumRev = 0;
+            getAnalysisData().forEach(row => {
+                const dateStr = row['From (GMT+9:00)'];
+                if (!dateStr) return;
+                if (period !== 'all' && dateStr.substring(0, 7) !== period) return;
+                const revenue = parseFloat(row['Revenue Share']) || 0;
+                totalRev += revenue;
+                if (isPremiumRow(row)) premiumRev += revenue;
+            });
+            return {normal: totalRev - premiumRev, premium: premiumRev, total: totalRev};
+        }
+
+        function renderPremiumRatioSection() {
+            const period = (premiumRatioPeriodSelect && premiumRatioPeriodSelect.value) || 'all';
+            const t = computePremiumRatioTotals(period);
+
+            createChart('premiumRatioChart', 'doughnut',
+                ['通常販売', 'Premium (定額制)'], [t.normal, t.premium], '収益 (円)',
+                {bg: ['rgba(59, 130, 246, 0.8)', 'rgba(234, 179, 8, 0.8)'], border: '#ffffff'}
+            );
+
+            const summary = document.getElementById('premiumRatioSummary');
+            if (!summary) return;
+            const normalPct = t.total > 0 ? (t.normal / t.total * 100) : 0;
+            const premiumPct = t.total > 0 ? (t.premium / t.total * 100) : 0;
+            let periodLabel;
+            if (period === 'all') {
+                const first = availableMonths[0];
+                const last = availableMonths[availableMonths.length - 1];
+                periodLabel = '全期間' + (first ? `（${escapeHtmlForDashboard(first === last ? first : first + '〜' + last)}）` : '');
+            } else {
+                periodLabel = escapeHtmlForDashboard(period);
+            }
+            summary.innerHTML = `
+                    <div class="col-span-2 flex justify-between items-baseline gap-2 text-[11px] md:text-xs text-gray-500"><span>集計期間：<span class="font-bold text-gray-700">${periodLabel}</span></span><span>合計 <span class="font-black text-gray-800">¥${Math.floor(t.total).toLocaleString()}</span></span></div>
+                    <div class="rounded-lg border bg-blue-50 px-3 py-2"><div class="font-bold text-gray-600">通常販売</div><div class="font-black text-gray-800">¥${Math.floor(t.normal).toLocaleString()} <span class="font-normal">(${normalPct.toFixed(2)}%)</span></div></div>
+                    <div class="rounded-lg border bg-yellow-50 px-3 py-2"><div class="font-bold text-gray-600">Premium</div><div class="font-black text-gray-800">¥${Math.floor(t.premium).toLocaleString()} <span class="font-normal">(${premiumPct.toFixed(2)}%)</span></div></div>
+                    <div class="col-span-2 text-[10px] text-gray-400">※上部の「対象月」とは独立して集計します（作品フィルターは反映）。金額はRevenue Share（分配金）の合計です。</div>`;
         }
 
         function renderDashboard() {
@@ -4046,19 +4125,11 @@
             createChart('emojiTrendChart', 'bar', sortedMonthsTrendAll, emojiData, '収益 (円)', typeColors['Emoji'] || defaultColor, trendOptions);
             createChart('themeTrendChart', 'bar', sortedMonthsTrendAll, themeData, '収益 (円)', typeColors['Theme'] || defaultColor, trendOptions);
 
-            const normalRev = totalRevenue - totalPremiumRevenue;
-            createChart('premiumRatioChart', 'doughnut',
-                ['通常販売', 'Premium (定額制)'], [normalRev, totalPremiumRevenue], '収益 (円)',
-                {bg: ['rgba(59, 130, 246, 0.8)', 'rgba(234, 179, 8, 0.8)'], border: '#ffffff'}
-            );
-            const premiumRatioSummary = document.getElementById('premiumRatioSummary');
-            if (premiumRatioSummary) {
-                const ratioBase = normalRev + totalPremiumRevenue;
-                const normalPct = ratioBase > 0 ? (normalRev / ratioBase * 100) : 0;
-                const premiumPct = ratioBase > 0 ? (totalPremiumRevenue / ratioBase * 100) : 0;
-                premiumRatioSummary.innerHTML = `
-                    <div class="rounded-lg border bg-blue-50 px-3 py-2"><div class="font-bold text-gray-600">通常販売</div><div class="font-black text-gray-800">¥${Math.floor(normalRev).toLocaleString()} <span class="font-normal">(${normalPct.toFixed(2)}%)</span></div></div>
-                    <div class="rounded-lg border bg-yellow-50 px-3 py-2"><div class="font-bold text-gray-600">Premium</div><div class="font-black text-gray-800">¥${Math.floor(totalPremiumRevenue).toLocaleString()} <span class="font-normal">(${premiumPct.toFixed(2)}%)</span></div></div>`;
+            // 通常販売 vs Premium 収益依存度（集計期間は premiumRatioPeriodSelect：全期間／各月）
+            try {
+                renderPremiumRatioSection();
+            } catch (e) {
+                console.error('収益依存度の描画でエラー:', e);
             }
 
             const premCats = Object.keys(totalPremiumByType).sort((a, b) => totalPremiumByType[b] - totalPremiumByType[a]);
