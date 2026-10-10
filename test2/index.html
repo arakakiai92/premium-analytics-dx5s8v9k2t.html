@@ -1976,9 +1976,9 @@
             monthlyPieRenderedChartIds = [];
         }
 
-        function monthlyPieMonthLabel(m) {   // 'YYYY-MM' → 'YYYY年M月'
-            const [y, mo] = String(m).split('-');
-            return `${y}年${parseInt(mo, 10)}月`;
+        function monthlyPieMonthLabel(m) {   // 月キー → 'YYYY年M月'（区切りは - / . など。既存のCSV読込は '/'→'-' のみ変換するため '2025.09' 形式の月キーもある）
+            const mt = String(m).match(/^(\d{4})\D+(\d{1,2})/);
+            return mt ? `${mt[1]}年${parseInt(mt[2], 10)}月` : String(m);   // 解釈できない形式は NaN にせず元の文字列を表示
         }
 
         function getCsvMonths() {
