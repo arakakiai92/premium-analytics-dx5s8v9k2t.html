@@ -4683,6 +4683,7 @@
         function countPremiumUsedItemsInMonth(month) {
             const keys = new Set();
             let premiumRows = 0;
+            let revenue = 0;
             globalData.forEach(row => {
                 const dateStr = row['From (GMT+9:00)'];
                 if (!dateStr || dateStr.substring(0, 7) !== month) return;
@@ -4692,8 +4693,10 @@
                 const id = row['Item ID'] || '';
                 const title = id ? (masterDataMap[id] || row['Item Title'] || '不明') : (row['Item Title'] || '不明');
                 keys.add(id || title);
+                // 分配金：作品数と同じ行（同月・Premium・作品フィルター適用後）の Revenue Share を合計
+                revenue += parseFloat(row['Revenue Share']) || 0;
             });
-            return {premiumRows: premiumRows, itemCount: keys.size};
+            return {premiumRows: premiumRows, itemCount: keys.size, revenue: revenue};
         }
 
         // 「今月」＝表示月プルダウンの選択月（実際のカレンダー上の今月ではない）、「先月」＝その前月。
@@ -4707,7 +4710,8 @@
             if (result.itemCount === 0) {
                 return {hasCount: false, html: `${label}（${monthLabel}）は、現在の作品フィルター条件に該当するPremium作品がありません`};
             }
-            return {hasCount: true, html: `${label}（${monthLabel}）は<span class="font-black text-yellow-700 mx-0.5">${result.itemCount.toLocaleString()}作品</span>が利用されました`};
+            return {hasCount: true, html: `${label}（${monthLabel}）は<span class="font-black text-yellow-700 mx-0.5">${result.itemCount.toLocaleString()}作品</span>が利用されました`
+                + `<span class="block text-xs text-gray-600">Premium分配金：<span class="font-bold text-gray-800">¥${Math.floor(result.revenue).toLocaleString()}</span></span>`};
         }
 
         function renderPremiumPrevMonthUsedNote() {
@@ -4725,7 +4729,7 @@
             const note = (current.hasCount || prev.hasCount)
                 ? `<span class="block text-[10px] text-gray-400 font-normal mt-1">※Premium分配金データに登場した作品数（重複除外）。利用回数・利用者数ではありません</span>`
                 : '';
-            el.innerHTML = `<div>${current.html}</div><div class="mt-1">${prev.html}</div>${note}`;
+            el.innerHTML = `<div>${current.html}</div><div class="mt-2">${prev.html}</div>${note}`;
             el.classList.remove('hidden');
         }
 
